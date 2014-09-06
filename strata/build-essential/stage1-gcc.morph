@@ -29,7 +29,13 @@ configure-commands:
                             --with-tune=cortex-a9 \
                             --with-fpu=vfpv3-d16 \
                             --with-float=hard" ;;
+
       armv7*)   ARCH_FLAGS="--with-arch=armv7-a" ;;
+
+      armv6lhf) ARCH_FLAGS="--with-arch=armv6zk \
+                            --with-cpu=arm1176jzf-s \
+                            --with-float=hard \
+                            --with-fpu=vfp" ;;
   esac
 
   cd o && ../configure                                        \
@@ -68,11 +74,13 @@ build-commands:
   # code results on an undefined reference to `__gmpn_invert_limb' in
   # ARMv7.  Fix the invocation of GMP's configure script so that GMP can
   # use the machine-dependent code.
+  cpu=$(uname -m)
   case "$MORPH_ARCH" in
       armv5*)   sed -i "s/--host=none/--host=armv5/" o/Makefile
                 sed -i "s/--target=none/--target=armv5/" o/Makefile ;;
       armv7*)   sed -i "s/--host=none/--host=armv7a/" o/Makefile
                 sed -i "s/--target=none/--target=armv7a/" o/Makefile ;;
+      armv6lhf) sed -i "s/none-/$cpu-/" o/Makefile  ;;
   esac
   cd o && make
 

@@ -26,7 +26,13 @@ configure-commands:
                             --with-tune=cortex-a9 \
                             --with-fpu=vfpv3-d16 \
                             --with-float=hard" ;;
+
       armv7*)   ARCH_FLAGS="--with-arch=armv7-a" ;;
+
+      armv6lhf) ARCH_FLAGS="--with-arch=armv6zk \
+                            --with-cpu=arm1176jzf-s \
+                            --with-float=hard \
+                            --with-fpu=vfp" ;;
   esac
   export STAGE2_SYSROOT="$(dirname $(pwd))"
   export CC="$TARGET_STAGE1-gcc --sysroot=$STAGE2_SYSROOT"
@@ -56,6 +62,7 @@ build-commands:
                 sed -i "s/--target=none/--target=armv5/" o/Makefile ;;
       armv7*)   sed -i "s/--host=none/--host=armv7a/" o/Makefile
                 sed -i "s/--target=none/--target=armv7a/" o/Makefile ;;
+      armv6*)   sed -i "s/none-/armv6a-/" o/Makefile ;;
   esac
   export STAGE2_SYSROOT="$(dirname $(pwd))"
   cd o && make
