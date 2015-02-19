@@ -1,0 +1,17 @@
+name: moonshot-m400-armv8l64-netboot
+kind: cluster
+description: |
+  Deploy a build-system onto an existing netboot server
+  present on one node of an HP moonshot server using the pxeboot.write extension,
+  writing kernel and pxelinux.cfg via TFTP, and rootfs via rsync.
+systems:
+- morph: systems/build-system-armv8l64.morph
+  deploy:
+    netboot:
+      type: pxeboot
+      location: 14:58:d0:57:6f:52
+      PXEBOOT_MODE: existing-server
+      PXEBOOT_CONFIG_TFTP_ADDRESS: sftp://192.168.0.1/srv/nfsboot/tftp/
+      PXEBOOT_ROOTFS_RSYNC_ADDRESS: rsync://192.168.0.1/srv/nfsboot/
+      KERNEL_ARGS: root=/dev/nfs ip=dhcp console=ttyS0,9600n8r rw
+      HOSTNAME: baserock-m400
