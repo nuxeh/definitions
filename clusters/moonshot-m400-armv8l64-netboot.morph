@@ -15,3 +15,4 @@ systems:
       PXEBOOT_ROOTFS_RSYNC_ADDRESS: rsync://192.168.0.1/srv/nfsboot/
       KERNEL_ARGS: root=/dev/nfs ip=dhcp console=ttyS0,9600n8r rw
       HOSTNAME: baserock-m400
+      CONVERT_MOONSHOT_KERNEL: yes

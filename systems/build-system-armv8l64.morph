@@ -37,3 +37,4 @@ configuration-extensions:
 - fstab
 - mason
 - cloud-init
+- convert-moonshot-kernel
