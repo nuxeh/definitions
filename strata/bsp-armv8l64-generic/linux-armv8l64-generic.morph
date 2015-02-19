@@ -96,8 +96,9 @@ configure-commands:
 - scripts/config -e POWER_AVS
 - yes '' | make ARCH=arm64 oldconfig
 build-commands:
-# Only generate Image here, uImage generated in deployment
-# due to availability of mkimage build systems
+# Generate Image here, with uImage generated in deployment, due
+# to availability of mkimage tool in build systems, and keeping
+# this bsp more generic
 - make Image dtbs $MAKEFLAGS
 install-commands:
 - mkdir -p "$DESTDIR"/boot
