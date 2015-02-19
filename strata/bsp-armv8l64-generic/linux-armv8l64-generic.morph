@@ -98,7 +98,7 @@ configure-commands:
 build-commands:
 # Only generate Image here, uImage generated in deployment
 # due to availability of mkimage build systems
-- make vmlinux dtbs $MAKEFLAGS
+- make Image dtbs $MAKEFLAGS
 install-commands:
 - mkdir -p "$DESTDIR"/boot
 - make install dtbs_install INSTALL_PATH="$DESTDIR/boot"
