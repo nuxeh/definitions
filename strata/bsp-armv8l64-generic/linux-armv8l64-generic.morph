@@ -98,7 +98,7 @@ configure-commands:
 build-commands:
 # Generate Image here, with uImage generated in deployment, due
 # to availability of mkimage tool in build systems, and keeping
-# this bsp more generic
+# this bsp generic for any armv8l4 system
 - make Image dtbs $MAKEFLAGS
 install-commands:
 - mkdir -p "$DESTDIR"/boot
