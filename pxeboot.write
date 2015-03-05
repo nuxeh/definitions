@@ -720,9 +720,9 @@ class PXEBoot(morphlib.writeexts.WriteExtension):
                                             rootfs_nfsroot=nfsroot,
                                             rootfs_subpath=rootfs_subpath,
                                             macaddr=macaddr):
+                self.ipmi_pxe_reboot_target()
                 persist = os.environ.get('PXE_INSTALLER') in ('no', 'False')
                 if not persist:
-                    self.ipmi_pxe_reboot_target()
                     self.wait_for_target_to_install()
                     self.ipmi_reboot_target()
         else:
