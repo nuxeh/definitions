@@ -46,6 +46,7 @@ chunks:
   repo: upstream:binutils-redhat
   ref: b1d3b01332ae49a60ff5d6bf53d3a5b1805769c8
   unpetrify-ref: baserock/build-essential
+  build-depends: []
   build-mode: bootstrap
   prefix: /tools
 
