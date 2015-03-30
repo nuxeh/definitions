@@ -23,7 +23,7 @@
 #   * INSTALLER_TARGET_STORAGE_DEVICE
 #   * INSTALLER_ROOTFS_TO_INSTALL
 #   * INSTALLER_POST_INSTALL_COMMAND (optional, defaults to `reboot -f`)
-#   * INSTALLER_CREATE_BOOT_PARTITION (optional, defaults no no)
+#   * INSTALLER_CREATE_BOOT_PARTITION (optional, defaults to 'no')
 
 import os
 import sys
@@ -43,7 +43,7 @@ except KeyError as e:
 postinstkey = 'INSTALLER_POST_INSTALL_COMMAND'
 installer_configuration[postinstkey] = os.environ.get(postinstkey, 'reboot -f')
 installer_configuration['INSTALLER_CREATE_BOOT_PARTITION'] = os.environ.get(
-        'INSTALLER_CREATE_BOOT_PARTITION')
+        'INSTALLER_CREATE_BOOT_PARTITION', 'no')
 
 with open(install_config_file, 'w') as f:
     f.write( yaml.dump(installer_configuration, default_flow_style=False) )
