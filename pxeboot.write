@@ -442,12 +442,13 @@ class PXEBoot(morphlib.writeexts.WriteExtension):
                               macaddr):
         rootfs_nfs_url = '{}/{}'.format(rootfs_nfsroot, rootfs_subpath)
         url = urlparse.urlsplit(kernel_tftproot)
+        kernel_tftp_url = '{}:{}'.format(url.netloc, kernel_subpath)
         pxe_cfg_filename = _normalise_macaddr(macaddr)
         url = urlparse.urlsplit(tftproot)
         inst_cfg_path = os.path.join(url.path, 'pxelinux.cfg')
         with tempfile.NamedTemporaryFile() as f:
             self._write_pxe_config(
-                    fh=f, kernel_tftp_url=kernel_subpath,
+                    fh=f, kernel_tftp_url=kernel_tftp_url,
                     fdt_subpath=fdt_subpath,
                     rootfs_nfs_url=rootfs_nfs_url,
                     extra_args=os.environ.get('KERNEL_ARGS',''))
