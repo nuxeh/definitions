@@ -12,8 +12,8 @@ chunks:
   unpetrify-ref: REL9_3_4
 - name: redis
   morph: strata/databases/redis.morph
-  repo: upstream:redis
-  ref: 9ee59fca9c5c429185d35779c2d5db64005091b0
+  repo: https://github.com/nuxeh/redis.git
+  ref: testbuild
   unpetrify-ref: baserock/3.0
 - name: memcached
   morph: strata/databases/memcached.morph
