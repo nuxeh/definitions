@@ -1,0 +1,6 @@
+name: ntpd
+kind: chunk
+build-system: autotools
+pre-configure-commands:
+- cp /usr/share/automake*/config.guess .
+- cp /usr/share/automake*/config.sub .
