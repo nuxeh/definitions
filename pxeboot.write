@@ -348,7 +348,7 @@ class PXEBoot(morphlib.writeexts.WriteExtension):
 
     @contextlib.contextmanager
     def remote_kernel(self, rootfs, tftp_url, macaddr):
-        for name in ('vmlinuz', 'zImage', 'uImage'):
+        for name in ('vmlinuz', 'vmlinux', 'zImage', 'uImage'):
             kernel_path = os.path.join(rootfs, 'boot', name)
             if os.path.exists(kernel_path):
                 break
