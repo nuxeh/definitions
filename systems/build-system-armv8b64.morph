@@ -47,3 +47,4 @@ configuration-extensions:
 - fstab
 - mason
 - cloud-init
+- moonshot-kernel
