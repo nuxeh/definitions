@@ -71,3 +71,4 @@ configuration-extensions:
 - openvswitch
 - postgres
 - apache-httpd-server
+- moonshot-kernel
