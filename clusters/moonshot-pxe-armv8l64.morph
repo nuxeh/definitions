@@ -6,7 +6,7 @@ description: |
   The system will be configured to boot through PXE from existing DHCP,
   TFTP and NFS servers.
 systems:
-- morph: systems/devel-system-armv8l64.morph
+- morph: systems/openstack-server-armv8l64.morph
   deploy:
     netboot:
       type: pxeboot
@@ -23,8 +23,59 @@ systems:
           ssh Administrator@10.0.1.10 set node power on c12n1
       PXE_INSTALLER: no
 
-      HOSTNAME: baserock-c12n1
       DTB_PATH: boot/m400-1003.dtb
       KERNEL_ARGS: console=ttyS0,9600n8r rw
-      INSTALL_FILES: moonshot/manifest
+      INSTALL_FILES: moonshot/manifest openstack/manifest
       MOONSHOT_KERNEL: yes
+      HOSTNAME: onenode
+      RABBITMQ_HOST: onenode
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASSWORD: veryinsecure
+      KEYSTONE_TEMPORARY_ADMIN_TOKEN: 22f3aa1cf538e3f6d5e8
+      KEYSTONE_TEMPORARY_ADMIN_PASSWORD: veryinsecure
+      KEYSTONE_PUBLIC_URL: http:\/\/onenode:5000\/v2.0
+      KEYSTONE_INTERNAL_URL: http:\/\/onenode:5000\/v2.0
+      KEYSTONE_ADMIN_URL: http:\/\/onenode:35357\/v2.0
+      KEYSTONE_DB_USER: keystoneDB
+      KEYSTONE_DB_PASSWORD: veryinsecure
+      IDENTITY_URI: http:\/\/onenode:35357
+      OPENSTACK_AUTH_HOST: onenode
+      OPENSTACK_AUTH_PORT: 35357
+      GLANCE_SERVICE_USER: glance
+      GLANCE_SERVICE_PASSWORD: veryinsecure
+      GLANCE_PUBLIC_URL: http:\/\/onenode:9292
+      GLANCE_INTERNAL_URL: http:\/\/onenode:9292
+      GLANCE_ADMIN_URL: http:\/\/onenode:9292
+      GLANCE_HOST: onenode
+      GLANCE_DB_USER: glanceDB
+      GLANCE_DB_PASSWORD: veryinsecure
+      NOVA_HOST: 127.0.0.1
+      NOVA_SERVICE_USER: nova
+      NOVA_SERVICE_PASSWORD: veryinsecure
+      NOVA_PUBLIC_URL: \"http:\/\/onenode:8774\/v2\/\%\(tenant_id\)s\"
+      NOVA_INTERNAL_URL: \"http:\/\/onenode:8774\/v2\/\%\(tenant_id\)s\"
+      NOVA_ADMIN_URL: \"http:\/\/onenode:8774\/v2\/\%\(tenant_id\)s\"
+      NOVA_NOVNCPROXY_BASE_URL: http:\/\/##NOVNC_HOST##:6080\/vnc_auto.html
+      NOVA_REGION: regionOne
+      NOVA_DB_USER: novaDB
+      NOVA_DB_PASSWORD: veryinsecure
+      CINDER_USER: cinder
+      CINDER_PASSWORD: veryinsecure
+      CINDER_PUBLIC_URL: \"http:\/\/onenode:8776\/v1\/\%\(tenant_id\)s\"
+      CINDER_INTERNAL_URL: \"http:\/\/onenode:8776\/v1\/\%\(tenant_id\)s\"
+      CINDER_ADMIN_URL: \"http:\/\/onenode:8776\/v1\/\%\(tenant_id\)s\"
+      CINDER_USER_V2: cinderv2
+      CINDER_PUBLIC_URL_V2: \"http:\/\/onenode:8776\/v2\/\%\(tenant_id\)s\"
+      CINDER_INTERNAL_URL_V2: \"http:\/\/onenode:8776\/v2\/\%\(tenant_id\)s\"
+      CINDER_ADMIN_URL_V2: \"http:\/\/onenode:8776\/v2\/\%\(tenant_id\)s\"
+      CINDER_DB_USER: cinderDB
+      CINDER_DB_PASSWORD: veryinsecure
+      NEUTRON_SERVICE_USER: neutron
+      NEUTRON_SERVICE_PASSWORD: veryinsecure
+      NEUTRON_DB_USER: neutronDB
+      NEUTRON_DB_PASSWORD: veryinsecure
+      NEUTRON_PUBLIC_URL: http:\/\/onenode:9696
+      NEUTRON_INTERNAL_URL: http:\/\/onenode:9696
+      NEUTRON_ADMIN_URL: http:\/\/onenode:9696
+      METADATA_PROXY_SHARED_SECRET: novaneutronmetasecret
