@@ -220,6 +220,7 @@ configure-commands:
 - scripts/config -e NETFILTER_XT_MATCH_U32
 - scripts/config -e IP_VS
 - scripts/config -e BRIDGE_NETFILTER
+- scripts/config -e IPV6
 # Required for M400
 - scripts/config -e SATA_AHCI_PLATFORM
 - scripts/config -e AHCI_XGENE
