@@ -2,5 +2,6 @@ name: ntpd
 kind: chunk
 build-system: autotools
 pre-configure-commands:
-- cp /usr/share/automake*/config.guess .
-- cp /usr/share/automake*/config.sub .
+- echo "running preconfiguration scripts ........." | tee -a hello
+- cp /usr/share/automake*/config.guess sntp/libevent/build-aux/
+- cp /usr/share/automake*/config.sub sntp/libevent/build-aux/
