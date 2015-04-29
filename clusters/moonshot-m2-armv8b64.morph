@@ -33,7 +33,6 @@ systems:
               echo "enter 'installed' in your deployment machine to finish the installation"
               sleep 2
           done
-      INSTALLER_CREATE_BOOT_PARTITION: yes
 
       HOSTNAME: installer-system-c31n1
       DTB_PATH: boot/m400-1003.dtb
