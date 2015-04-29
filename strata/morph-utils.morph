@@ -40,9 +40,9 @@ chunks:
   ref: 221dd259f5c34562c835611d1cf62384b9019da4
   unpetrify-ref: master
 - name: morph
-  repo: baserock:baserock/morph
-  ref: e9f13c83996ab2affe237ff800cf872dc229102e
-  unpetrify-ref: master
+  repo: https://github.com/nuxeh/morph.git
+  ref: f626c96d1309e33254df2470f65090b54f698196
+  unpetrify-ref: github/baserock/edcragg/support-ext-boot-partition-in-rawdisk-write-extension
   build-depends:
   - cmdtest
   - pyfilesystem
