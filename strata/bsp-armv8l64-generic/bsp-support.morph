@@ -1,0 +1,5 @@
+name: bsp-support
+kind: chunk
+install-commands:
+- mkimage -A arm -T script -C none -n "moonshot boot script" -d boot.script boot.scr
+- install -D boot.scr "$DESTDIR/boot/boot.scr"
