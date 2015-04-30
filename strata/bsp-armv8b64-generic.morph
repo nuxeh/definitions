@@ -14,3 +14,8 @@ chunks:
   ref: cd1397b1f6e429b82e94565b0af93c6bd44e4271
   unpetrify-ref: baserock/bjdooks/m400-be3
   build-depends: []
+- name: bsp-support
+  morph: strata/bsp-armv8b64-generic/bsp-support.morph
+  repo: https://github.com/nuxeh/bsp-support.git
+  ref: 7cca5f5a768368ac47904bbc51c50d35c3a62434
+  unpetrify-ref: edcragg/moonshot-local-deployment
