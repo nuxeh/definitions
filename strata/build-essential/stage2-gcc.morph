@@ -27,6 +27,8 @@ configure-commands:
                             --with-fpu=vfpv3-d16 \
                             --with-float=hard" ;;
       armv7*)   ARCH_FLAGS="--with-arch=armv7-a" ;;
+      armv8*)   ARCH_FLAGS="--with-arch=armv8-a \
+                            --with-fpu=fp-armv8" ;;
   esac
   export STAGE2_SYSROOT="$(dirname $(pwd))"
   export CC="$TARGET_STAGE1-gcc --sysroot=$STAGE2_SYSROOT"
@@ -56,6 +58,8 @@ build-commands:
                 sed -i "s/--target=none/--target=armv5/" o/Makefile ;;
       armv7*)   sed -i "s/--host=none/--host=armv7a/" o/Makefile
                 sed -i "s/--target=none/--target=armv7a/" o/Makefile ;;
+      armv8*)   sed -i "s/--host=none/--host=armv8/" o/Makefile
+                sed -i "s/--target=none/--target=armv8/" o/Makefile ;;
   esac
   export STAGE2_SYSROOT="$(dirname $(pwd))"
   cd o && make
