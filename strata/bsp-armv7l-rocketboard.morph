@@ -1,0 +1,13 @@
+name: bsp-armv7l-rocketboard
+kind: stratum
+description: |
+  The platform dependent components required to boot the Altera Cortex-A9
+  HPS core on an Altera SoCFPGA Rocket Board development kit.
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: linux-armv7l-rocketboard
+  morph: strata/bsp-armv7l-rocketboard/linux-armv7l-rocketboard.morph
+  repo: git://git.rocketboards.org/linux-socfpga.git
+  ref: 0e9c1d95078974567db80f9e88f68483fc50034a
+  unpetrify-ref: socfpga-3.18
