@@ -29,5 +29,5 @@ build-commands:
 - make ARCH=arm LOADADDR=0x8000 zImage dtbs $MAKEFLAGS
 install-commands:
 - mkdir -p "$DESTDIR"/boot
-- cp arch/arm/boot/uImage "$DESTDIR"/boot/uImage
-- cp -R arch/arm/boot/dts/socfpga_cyclone5.dtb "$DESTDIR"/boot/
+- cp arch/arm/boot/zImage "$DESTDIR"/boot/zImage
+- cp arch/arm/boot/dts/socfpga_cyclone5*.dtb "$DESTDIR"/boot/
