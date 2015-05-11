@@ -26,7 +26,7 @@ configure-commands:
 - scripts/config -d MTD_NAND
 - yes '' | make oldconfig
 build-commands:
-- make ARCH=arm LOADADDR=0x8000 uImage dtbs $MAKEFLAGS
+- make ARCH=arm LOADADDR=0x8000 zImage dtbs $MAKEFLAGS
 install-commands:
 - mkdir -p "$DESTDIR"/boot
 - cp arch/arm/boot/uImage "$DESTDIR"/boot/uImage
