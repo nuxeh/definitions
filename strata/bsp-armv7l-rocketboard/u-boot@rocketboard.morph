@@ -4,6 +4,7 @@ build-commands:
 - make tools
 install-commands:
 - mkdir -p "$DESTDIR/boot"
+# install?
 - cp *.bin "$DESTDIR/boot"
 - mkdir -p "$DESTDIR$PREFIX/bin"
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."

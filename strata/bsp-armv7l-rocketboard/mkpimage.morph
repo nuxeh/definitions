@@ -1,0 +1,6 @@
+name: mkpimage
+kind: chunk
+build-commands:
+- make
+install-commands:
+- # move binary to $DESTDIR/$PREFIX

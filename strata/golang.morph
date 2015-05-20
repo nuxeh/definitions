@@ -1,0 +1,11 @@
+name: golang
+kind: stratum
+description: The Go (golang) compiler and tools
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: golang
+  morph: strata/golang/golang.morph
+  repo: https://go.googlesource.com/go
+  ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
+  unpetrify-ref: go1.4.2
