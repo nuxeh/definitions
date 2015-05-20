@@ -1,6 +1,7 @@
 name: bsp-armv7l-rocketboard
 kind: chunk
 configure-commands:
+- git status
 - make ARCH=arm socfpga_defconfig
 - scripts/config -e BTRFS_FS
 - scripts/config -e BTRFS_FS_POSIX_ACL
