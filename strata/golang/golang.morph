@@ -1,9 +1,8 @@
 name: golang
 kind: chunk
-configure-commands:
-- #
 build-commands:
-- cd src
-- bash ./all.bash
+# Skip tests, which fail in containment
+- cd src && TMPDIR=/tmp bash ./make.bash
 install-commands:
-- # move binary to $DESTDIR/$PREFIX
+- mkdir -p "$DESTDIR$PREFIX/bin/"
+- install -m 755 bin/* "$DESTDIR$PREFIX/bin/"
