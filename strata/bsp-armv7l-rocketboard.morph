@@ -6,8 +6,31 @@ description: |
 build-depends:
 - morph: strata/core.morph
 chunks:
+- name: mkpimage
+  morph: strata/bsp-armv7l-rocketboard/mkpimage.morph
+  repo: https://github.com/maximeh/mkpimage.git
+  ref: d64752876a6185853400498d3a43a5e18681cab7
+  unpetrify-ref: master
+  build-depends:
+  - golang
+- name: bsp-support
+  morph: strata/bsp-armv7l-rocketboard/bsp-support.morph
+  repo: https://github.com/nuxeh/bsp-support.git
+  ref:
+  unpetrify-ref: master
+#preloader? :
+- name: u-boot@rocketboard
+  morph: strata/bsp-armv7l-rocketboard/u-boot@rocketboard.morph
+  repo: git://git.rocketboards.org/u-boot-socfpga.git
+  ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
+  unpetrify-ref: origin/socfpga_v2013.01.01
+  build-depends:
+  - mkpimage
+  - bsp-support
 - name: linux-armv7l-rocketboard
   morph: strata/bsp-armv7l-rocketboard/linux-armv7l-rocketboard.morph
   repo: git://git.rocketboards.org/linux-socfpga.git
   ref: 0e9c1d95078974567db80f9e88f68483fc50034a
   unpetrify-ref: socfpga-3.18
+#bsp-support
+#dtb

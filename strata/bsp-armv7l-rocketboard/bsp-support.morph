@@ -1,0 +1,9 @@
+name: bsp-support
+kind: chunk
+configure-commands:
+- #
+build-commands:
+- cd src
+- bash ./all.bash
+install-commands:
+- # move binary to $DESTDIR/$PREFIX
