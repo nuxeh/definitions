@@ -6,3 +6,6 @@ build-commands:
 install-commands:
 - mkdir -p "$DESTDIR$PREFIX/bin/"
 - install -m 755 bin/* "$DESTDIR$PREFIX/bin/"
+- rm -rf bin
+- mkdir -p "$DESTDIR$PREFIX/lib/go/"
+- cp -R ./* "$DESTDIR$PREFIX/lib/go/"

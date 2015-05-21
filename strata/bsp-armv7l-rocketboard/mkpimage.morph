@@ -1,6 +1,10 @@
 name: mkpimage
 kind: chunk
+configure-commands:
+- mkdir -p ./third_party/src/github.com/docopt/docopt.go
+- cp -R /tmp/docopt/* ./third_party/src/github.com/docopt/docopt.go/
 build-commands:
-- make
+- GOPATH=$(pwd -P) GOROOT=/usr/lib/go make
 install-commands:
-- # move binary to $DESTDIR/$PREFIX
+- mkdir -p "$DESTDIR$PREFIX/bin/"
+- install -m 755 bin/* "$DESTDIR$PREFIX/bin/"

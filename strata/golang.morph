@@ -2,7 +2,9 @@ name: golang
 kind: stratum
 description: The Go (golang) compiler and tools
 build-depends:
-- morph: strata/core.morph
+# tools ?
+#- morph: strata/core.morph
+- morph: strata/tools.morph
 chunks:
 - name: golang
   morph: strata/golang/golang.morph

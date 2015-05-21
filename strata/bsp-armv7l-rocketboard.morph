@@ -6,13 +6,24 @@ description: |
 build-depends:
 - morph: strata/core.morph
 chunks:
+- name: golang
+  morph: strata/golang/golang.morph
+  repo: https://go.googlesource.com/go
+  ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
+  unpetrify-ref: go1.4.2
+- name: docopt
+  morph: strata/bsp-armv7l-rocketboard/docopt.morph
+  repo: https://github.com/docopt/docopt.go
+  ref: 854c423c810880e30b9fecdabb12d54f4a92f9bb
+  unpetrify-ref: master
 - name: mkpimage
   morph: strata/bsp-armv7l-rocketboard/mkpimage.morph
-  repo: https://github.com/maximeh/mkpimage.git
-  ref: d64752876a6185853400498d3a43a5e18681cab7
+  repo: https://github.com/Lefinnois/mkpimage.git
+  ref: 1922e4b0f446e8db01c3a784d52a6f65b460de5b
   unpetrify-ref: master
   build-depends:
   - golang
+  - docopt
 - name: bsp-support
   morph: strata/bsp-armv7l-rocketboard/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
