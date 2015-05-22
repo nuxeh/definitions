@@ -1,12 +1,14 @@
-name: u-boot@rocketboard
+name: u-boot@socfpga-devkit
 kind: chunk
+configure-commands:
+- make ARCH=arm socfpga_cyclone5_config
 build-commands:
-- make tools
+- make ARCH=arm
+- make ARCH=arm tools
 install-commands:
 - mkdir -p "$DESTDIR/boot"
-# install?
-- cp *.bin "$DESTDIR/boot"
 - mkdir -p "$DESTDIR$PREFIX/bin"
+- install -m 755 u-boot.img "$DESTDIR/boot/."
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/jtagconsole "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/netconsole "$DESTDIR$PREFIX/bin/."
