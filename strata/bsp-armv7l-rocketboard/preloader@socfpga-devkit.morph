@@ -1,14 +1,25 @@
 name: preloader@socfpga-devkit
 kind: chunk
+configure-commands:
+- ls
+- mkdir uboot-socfpga
+- ls -a1 | egrep -v '^uboot-socfpga|\.$' | xargs -I {} mv {} uboot-socfpga
+- ls
+- ls uboot-socfpga
+- cp -R /tmp/preloader/spl_bsp/* .
+- cp -R /tmp/preloader/hps_hps_0 .
+- ls
+# Modify Makefile:
+- sed -i 's/^PRELOADER_SETTINGS_DIR := .*$/PRELOADER_SETTINGS_DIR := .\/hps_hps_0/' Makefile
+- sed -i 's/^CROSS_COMPILE := .*$/CROSS_COMPILE := \/usr\/bin\//' Makefile
+- "sed -i 's/^$(CONFIG): $(UPDATE_SRC) $(UNTAR_SRC) $(PATCH_APPLY)/$(CONFIG): $(UPDATE_SRC)/' Makefile"
+- "sed -i 's/^$(UNTAR_SRC): $(TGZ)/$(UNTAR_SRC):/' Makefile"
+- "sed -i 's@^UNTAR_SRC := $(STAMP_DIR)/.untar@@' Makefile"
+- sed -i 's/^$(UNTAR) $(if $1,$1,$(if.*$//' Makefile
+- sed -i 's/--header-version 0//' Makefile 
+- cat Makefile
 build-commands:
-- make tools
+- make
 install-commands:
 - mkdir -p "$DESTDIR/boot"
-# install?
-- cp *.bin "$DESTDIR/boot"
-- mkdir -p "$DESTDIR$PREFIX/bin"
-- install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
-- install -m 755 tools/jtagconsole "$DESTDIR$PREFIX/bin/."
-- install -m 755 tools/netconsole "$DESTDIR$PREFIX/bin/."
-- install -m 755 tools/mkenvimage "$DESTDIR$PREFIX/bin/."
-- install -m 755 tools/mkimage "$DESTDIR$PREFIX/bin/."
+- install -m 755 preloader-mkpimage.bin "$DESTDIR/boot"
