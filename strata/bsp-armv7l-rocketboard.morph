@@ -12,8 +12,8 @@ chunks:
   repo: https://go.googlesource.com/go
   ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
   unpetrify-ref: go1.4.2
-- name: docopt
-  morph: strata/bsp-armv7l-rocketboard/docopt.morph
+- name: docopt-go
+  morph: strata/bsp-armv7l-rocketboard/docopt-go.morph
   repo: https://github.com/docopt/docopt.go
   ref: 854c423c810880e30b9fecdabb12d54f4a92f9bb
   unpetrify-ref: master
@@ -25,7 +25,7 @@ chunks:
   unpetrify-ref: master
   build-depends:
   - golang
-  - docopt
+  - docopt-go
 - name: device-tree-compiler
   morph: strata/bsp-armv7l-rocketboard/device-tree-compiler.morph
   repo: upstream:device-tree-compiler

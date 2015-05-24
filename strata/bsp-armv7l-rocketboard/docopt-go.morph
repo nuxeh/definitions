@@ -1,0 +1,6 @@
+name: docopt-go
+kind: chunk
+install-commands:
+# Copy repo contents into /tmp
+- mkdir -p "$DESTDIR/tmp/docopt-go"
+- cp -R ./* "$DESTDIR/tmp/docopt-go/"
