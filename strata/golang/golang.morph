@@ -2,10 +2,11 @@ name: golang
 kind: chunk
 build-commands:
 # Skip tests, which fail in containment
-- cd src && TMPDIR=/tmp bash ./make.bash
+- cd src && TMPDIR=/tmp GOROOT_FINAL=/usr/lib/go ./make.bash
 install-commands:
 - mkdir -p "$DESTDIR$PREFIX/bin/"
 - install -m 755 bin/* "$DESTDIR$PREFIX/bin/"
 - rm -rf bin
+# Create Go installation (GOROOT):
 - mkdir -p "$DESTDIR$PREFIX/lib/go/"
 - cp -R ./* "$DESTDIR$PREFIX/lib/go/"

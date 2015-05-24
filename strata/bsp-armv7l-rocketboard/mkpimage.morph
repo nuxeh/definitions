@@ -4,7 +4,7 @@ configure-commands:
 - mkdir -p ./third_party/src/github.com/docopt/docopt.go
 - cp -R /tmp/docopt/* ./third_party/src/github.com/docopt/docopt.go/
 build-commands:
-- GOPATH=$(pwd -P) GOROOT=/usr/lib/go make
+- GOPATH=$(pwd -P) make
 install-commands:
 - mkdir -p "$DESTDIR$PREFIX/bin/"
 - install -m 755 bin/* "$DESTDIR$PREFIX/bin/"
