@@ -20,6 +20,8 @@ configure-commands:
 - cat Makefile
 build-commands:
 - make
+- make uboot
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 preloader-mkpimage.bin "$DESTDIR/boot"
+- install -m 755 uboot-socfpga/u-boot.img "$DESTDIR/boot"

@@ -8,7 +8,6 @@ build-commands:
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - mkdir -p "$DESTDIR$PREFIX/bin"
-- install -m 755 u-boot.img "$DESTDIR/boot/."
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/jtagconsole "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/netconsole "$DESTDIR$PREFIX/bin/."
