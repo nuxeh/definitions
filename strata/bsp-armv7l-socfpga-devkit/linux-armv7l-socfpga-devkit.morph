@@ -1,4 +1,4 @@
-name: bsp-armv7l-rocketboard
+name: linux-armv7l-socfpga-devkit
 kind: chunk
 configure-commands:
 - git status
