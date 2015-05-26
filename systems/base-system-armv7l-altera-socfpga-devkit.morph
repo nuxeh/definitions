@@ -1,8 +1,8 @@
-name: base-system-armv7l-altera-rocketboard
+name: base-system-armv7l-altera-socfpga-devkit
 kind: system
 description: |
   The set of strata required to have a minimal system for use on Altera SoCFPGA
-  Rocket Board, using little-endian word order.
+  development kit, using little-endian word order.
 arch: armv7lhf
 strata:
 - name: build-essential
@@ -11,8 +11,8 @@ strata:
   morph: strata/core.morph
 - name: foundation
   morph: strata/foundation.morph
-- name: bsp-armv7l-rocketboard
-  morph: strata/bsp-armv7l-rocketboard.morph
+- name: bsp-armv7l-socfpga-devkit
+  morph: strata/bsp-armv7l-socfpga-devkit.morph
 configuration-extensions:
 - set-hostname
 - add-config-files

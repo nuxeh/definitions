@@ -1,10 +1,10 @@
-name: devel-system-armv7l-rocketboard
+name: devel-system-armv7l-altera-socfpga-devkit
 kind: system
 description: |
   A system with useful tools for doing Baserock development.
 
-  For use on Altera SoCFPGA Rocket Board, using little-endian word order and
-  hardware floating point support.
+  For use on Altera SoCFPGA development kit, using little-endian word
+  order.
 arch: armv7lhf
 strata:
 - name: build-essential
@@ -13,8 +13,8 @@ strata:
   morph: strata/core.morph
 - name: foundation
   morph: strata/foundation.morph
-- name: bsp-armv7l-rocketboard
-  morph: strata/bsp-armv7l-rocketboard.morph
+- name: bsp-armv7l-socfpga-devkit
+  morph: strata/bsp-armv7l-socfpga-devkit.morph
 - name: tools
   morph: strata/tools.morph
 - name: python-cliapp
