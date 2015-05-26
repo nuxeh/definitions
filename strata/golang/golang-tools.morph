@@ -1,0 +1,21 @@
+name: golang-tools
+kind: chunk
+configure-commands:
+- 
+build-commands:
+- GOPATH=$(pwd -P) go install -v golang.org/x/tools/cmd/... 
+install-commands:
+- mkdir -p "$DESTDIR$PREFIX/bin/"
+- install -m 755 bin/* "$DESTDIR$PREFIX/bin/"
+- mkdir -p "$DESTDIR$PREFIX/lib/go/pkg"
+- cp -R pkg/* "$DESTDIR$PREFIX/lib/go/pkg"
+# get tools
+# get net
+# create src/golang.org/x/tools/cmd/
+
+#find /usr/lib/go/pkg/ -name "*.*" | sudo xargs touch
+#GOPATH=$(pwd -P) go build -v golang.org/x/tools/cmd/...
+# Copy pkg and bin
+
+# Have to do it out of tree?
+
