@@ -39,7 +39,7 @@ chunks:
 - name: bsp-support
   morph: strata/bsp-armv7l-socfpga-devkit/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
-  ref: 257970d82139196855a33f377e7060cea9a8e704
+  ref: 4d3a42b3d13c26be7bbd45b90cc151c8a292014e
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot@socfpga-devkit
