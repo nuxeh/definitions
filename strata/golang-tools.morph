@@ -1,18 +1,11 @@
-name: golang
+name: golang-tools
 kind: stratum
-description: The Go (golang) compiler and tools
+description: Additional Go (golang) tools
 build-depends:
-# tools ?
-#- morph: strata/core.morph
 - morph: strata/tools.morph
 chunks:
-- name: golang
-  morph: strata/golang/golang.morph
+- name: golang-tools
+  morph: strata/golang/golang-tools.morph
   repo: https://go.googlesource.com/go
   ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
   unpetrify-ref: go1.4.2
-- name: golang-tools
-  morph: strata/golang/golang-tools.morph
-  repo: https://go.googlesource.com/tools
-  ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
-  unpetrify-ref: 
