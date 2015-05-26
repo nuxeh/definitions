@@ -1,8 +1,12 @@
 name: bsp-support
 kind: chunk
 build-commands:
+# Modify auto-generated source files:
+- for file in patches/*.diff; do patch -p 1 < "$file"; done
+- sed -i 's/^PRELOADER_SETTINGS_DIR := .*$/PRELOADER_SETTINGS_DIR := .\/hps_hps_0/' Makefile
+- sed -i 's/^CROSS_COMPILE := .*$/CROSS_COMPILE := \/usr\/bin\//' Makefile
 - mkenvimage -s 4096 -o socfpga-devkit-env.img socfpga-devkit-env.txt
-- dtc -I dts -O dtb dts-generated/socfpga-devkit.dts > socfpga-devkit.dtb
+- dtc -f -I dts -O dtb dts-generated/socfpga-devkit.dts > socfpga-devkit.dtb
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 socfpga-devkit-env.img "$DESTDIR/boot"
@@ -10,4 +14,3 @@ install-commands:
 # These files are required later, to be built against U-Boot:
 - mkdir -p "$DESTDIR/tmp/preloader"
 - cp -R ./hardware-handoff/* "$DESTDIR/tmp/preloader"
-- cp -R patches "$DESTDIR/tmp/preloader"

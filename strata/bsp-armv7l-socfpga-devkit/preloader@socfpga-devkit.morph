@@ -5,11 +5,6 @@ configure-commands:
 - ls -a1 | egrep -v '^uboot-socfpga|\.$' | xargs -I {} mv {} uboot-socfpga
 - cp -R /tmp/preloader/spl_bsp/* .
 - cp -R /tmp/preloader/hps_hps_0 .
-- cp -R /tmp/preloader/patches .
-# Modify generated source files:
-- sed -i 's/^PRELOADER_SETTINGS_DIR := .*$/PRELOADER_SETTINGS_DIR := .\/hps_hps_0/' Makefile
-- sed -i 's/^CROSS_COMPILE := .*$/CROSS_COMPILE := \/usr\/bin\//' Makefile
-- ls -1 patches/*.diff | xargs -I {} patch < {}
 build-commands:
 - make
 - make uboot
