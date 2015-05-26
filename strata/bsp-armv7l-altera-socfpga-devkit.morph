@@ -1,4 +1,4 @@
-name: bsp-armv7l-socfpga-devkit
+name: bsp-armv7l-altera-socfpga-devkit
 kind: stratum
 description: |
   The platform dependent components required to boot the Altera Cortex-A9
@@ -12,12 +12,12 @@ chunks:
   ref: 883bc6ed0ea815293fe6309d66f967ea60630e87
   unpetrify-ref: go1.4.2
 - name: docopt-go
-  morph: strata/bsp-armv7l-socfpga-devkit/docopt-go.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/docopt-go.morph
   repo: https://github.com/docopt/docopt.go
   ref: 854c423c810880e30b9fecdabb12d54f4a92f9bb
   unpetrify-ref: master
 - name: mkpimage
-  morph: strata/bsp-armv7l-socfpga-devkit/mkpimage.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/mkpimage.morph
   repo: https://github.com/Lefinnois/mkpimage.git
   ref: 1922e4b0f446e8db01c3a784d52a6f65b460de5b
   unpetrify-ref: master
@@ -25,26 +25,26 @@ chunks:
   - golang
   - docopt-go
 - name: device-tree-compiler
-  morph: strata/bsp-armv7l-socfpga-devkit/device-tree-compiler.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/device-tree-compiler.morph
   repo: upstream:device-tree-compiler
   ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
   unpetrify-ref: v1.4.1
 - name: u-boot@socfpga-devkit
-  morph: strata/bsp-armv7l-socfpga-devkit/u-boot@socfpga-devkit.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/u-boot@socfpga-devkit.morph
   repo: upstream:u-boot
   ref: 905e8f9e53766e606bd4a0ed46d804889e613f32
   unpetrify-ref: v2015.07-rc1
   build-depends:
   - device-tree-compiler
 - name: bsp-support
-  morph: strata/bsp-armv7l-socfpga-devkit/bsp-support.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
   ref: 4d3a42b3d13c26be7bbd45b90cc151c8a292014e
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot@socfpga-devkit
 - name: preloader@socfpga-devkit
-  morph: strata/bsp-armv7l-socfpga-devkit/preloader@socfpga-devkit.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/preloader@socfpga-devkit.morph
   repo: git://git.rocketboards.org/u-boot-socfpga.git
   ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
   unpetrify-ref: socfpga_v2013.01.01
@@ -52,7 +52,7 @@ chunks:
   - mkpimage
   - bsp-support
 - name: linux-armv7l-socfpga-devkit
-  morph: strata/bsp-armv7l-socfpga-devkit/linux-armv7l-socfpga-devkit.morph
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/linux-armv7l-socfpga-devkit.morph
   repo: upstream:linux
   ref: e26081808edadfd257c6c9d81014e3b25e9a6118
   unpetrify-ref: v4.1-rc4
