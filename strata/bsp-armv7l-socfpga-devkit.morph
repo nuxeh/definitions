@@ -5,7 +5,6 @@ description: |
   HPS core on an Altera SoCFPGA development kit.
 build-depends:
 - morph: strata/core.morph
-#- morph: strata/golang.morph
 chunks:
 - name: golang
   morph: strata/golang/golang.morph
@@ -17,7 +16,6 @@ chunks:
   repo: https://github.com/docopt/docopt.go
   ref: 854c423c810880e30b9fecdabb12d54f4a92f9bb
   unpetrify-ref: master
-# in golang chunk
 - name: mkpimage
   morph: strata/bsp-armv7l-socfpga-devkit/mkpimage.morph
   repo: https://github.com/Lefinnois/mkpimage.git
@@ -45,11 +43,6 @@ chunks:
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot@socfpga-devkit
-
-# build dtb (generate a new one)
-# copy handoff to /tmp
-# FPGA design file - RBF handling
-
 - name: preloader@socfpga-devkit
   morph: strata/bsp-armv7l-socfpga-devkit/preloader@socfpga-devkit.morph
   repo: git://git.rocketboards.org/u-boot-socfpga.git
