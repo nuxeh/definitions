@@ -10,3 +10,4 @@ install-commands:
 # These files are required later, to be built against U-Boot:
 - mkdir -p "$DESTDIR/tmp/preloader"
 - cp -R ./hardware-handoff/* "$DESTDIR/tmp/preloader"
+- cp -R patches "$DESTDIR/tmp/preloader"
