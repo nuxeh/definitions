@@ -1,14 +1,21 @@
 name: preloader@socfpga-devkit
 kind: chunk
 configure-commands:
+# copy this from temp, too
 - mkdir uboot-socfpga
-- ls -a1 | egrep -v '^uboot-socfpga|\.$' | xargs -I {} mv {} uboot-socfpga
+- ls -a1 | egrep -v '^uboot-socfpga|\.$' | xargs -I {} mv {} uboot-socfpga # refactor
 - cp -R /tmp/preloader/spl_bsp/* .
 - cp -R /tmp/preloader/hps_hps_0 .
 build-commands:
 - make
 - make uboot
+# Signed preloader needs to be duplicated four times
+# which U-Boot's mkimage tool doesn't support
+- dd if=/dev/zero of=preloader-socfpga.img bs=64K count=4
+- for i in $(seq 0 3); do dd if=preloader-mkpimage.bin of=preloader-socfpga.img bs=64K seek=$i conv=notrunc; done
+- cp preloader-socfpga.img preloader-mkpimage.bin
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 preloader-mkpimage.bin "$DESTDIR/boot"
 - install -m 755 uboot-socfpga/u-boot.img "$DESTDIR/boot"
+# mkimage here and cancel in Makefile? yes

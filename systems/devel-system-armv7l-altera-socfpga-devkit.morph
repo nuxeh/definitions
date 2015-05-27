@@ -13,8 +13,8 @@ strata:
   morph: strata/core.morph
 - name: foundation
   morph: strata/foundation.morph
-- name: bsp-armv7l-socfpga-devkit
-  morph: strata/bsp-armv7l-socfpga-devkit.morph
+- name: bsp-armv7l-altera-socfpga-devkit
+  morph: strata/bsp-armv7l-altera-socfpga-devkit.morph
 - name: tools
   morph: strata/tools.morph
 - name: python-cliapp

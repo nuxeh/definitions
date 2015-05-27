@@ -39,7 +39,7 @@ chunks:
 - name: bsp-support
   morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
-  ref: 4d3a42b3d13c26be7bbd45b90cc151c8a292014e
+  ref: 34eea1272eb38b36780e4a53ab05fc1991b7ad22
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot@socfpga-devkit
@@ -49,10 +49,10 @@ chunks:
   ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
   unpetrify-ref: socfpga_v2013.01.01
   build-depends:
-  - mkpimage
   - bsp-support
-- name: linux-armv7l-socfpga-devkit
-  morph: strata/bsp-armv7l-altera-socfpga-devkit/linux-armv7l-socfpga-devkit.morph
+  - u-boot@socfpga-devkit
+- name: linux-armv7l-altera-socfpga-devkit
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/linux-armv7l-altera-socfpga-devkit.morph
   repo: upstream:linux
   ref: e26081808edadfd257c6c9d81014e3b25e9a6118
   unpetrify-ref: v4.1-rc4
