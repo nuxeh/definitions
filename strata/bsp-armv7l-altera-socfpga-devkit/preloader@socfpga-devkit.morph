@@ -8,7 +8,7 @@ configure-commands:
 - cp -R /tmp/preloader/hps_hps_0 .
 build-commands:
 - make
-- make uboot
+#- make uboot
 # Signed preloader needs to be duplicated four times
 # which U-Boot's mkimage tool doesn't support
 - dd if=/dev/zero of=preloader-socfpga.img bs=64K count=4
@@ -17,5 +17,5 @@ build-commands:
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 preloader-mkpimage.bin "$DESTDIR/boot"
-- install -m 755 uboot-socfpga/u-boot.img "$DESTDIR/boot"
+#- install -m 755 uboot-socfpga/u-boot.img "$DESTDIR/boot"
 # mkimage here and cancel in Makefile? yes

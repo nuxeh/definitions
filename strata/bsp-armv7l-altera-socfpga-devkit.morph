@@ -39,15 +39,15 @@ chunks:
 - name: bsp-support
   morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
-  ref: 34eea1272eb38b36780e4a53ab05fc1991b7ad22
+  ref: 596e80189b5b1abee75a15fbf4587edf47207d64
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot@socfpga-devkit
 - name: preloader@socfpga-devkit
   morph: strata/bsp-armv7l-altera-socfpga-devkit/preloader@socfpga-devkit.morph
-  repo: git://git.rocketboards.org/u-boot-socfpga.git
-  ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
-  unpetrify-ref: socfpga_v2013.01.01
+  repo: https://github.com/nuxeh/u-boot.git
+  ref: c101225198c37bf2d3c70b66d8cccc81875ba86a
+  unpetrify-ref: edcragg/baserock-on-socfpga-devkit
   build-depends:
   - bsp-support
   - u-boot@socfpga-devkit

@@ -4,9 +4,13 @@ configure-commands:
 - git status
 - make ARCH=arm socfpga_cyclone5_config
 build-commands:
+- make ARCH=arm
 - make ARCH=arm tools
 install-commands:
 - mkdir -p "$DESTDIR/boot"
+- find . | egrep 'img|bin'
+- install -m 755 u-boot.img "$DESTDIR/boot"
+#- ls flobble
 - mkdir -p "$DESTDIR$PREFIX/bin"
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/jtagconsole "$DESTDIR$PREFIX/bin/."
