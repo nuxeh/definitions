@@ -1,0 +1,6 @@
+name: u-boot-socfpga@socfpga-devkit
+kind: chunk
+install-commands:
+# These files are required later, to be built against U-Boot:
+- mkdir -p "$DESTDIR/tmp/preloader/uboot-socfpga"
+- cp -R ./* "$DESTDIR/tmp/preloader/uboot-socfpga/"
