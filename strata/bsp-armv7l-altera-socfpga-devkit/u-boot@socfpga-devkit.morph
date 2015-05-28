@@ -1,14 +1,9 @@
 name: u-boot@socfpga-devkit
 kind: chunk
 configure-commands:
-- make ARCH=arm socfpga_cyclone5_config
-- locale > locale.txt
-- printenv > printenv.txt
-- LC_ALL=C LC_COLLATE=C LC_NUMERIC=C LANG=C locale > locale2.txt
-- LC_ALL=C LC_COLLATE=C LC_NUMERIC=C LANG=C printenv > printenv2.txt
+- unset LC_ALL && LC_COLLATE=C LC_NUMERIC=C make ARCH=arm socfpga_cyclone5_config
 build-commands:
-- LC_ALL=C LC_COLLATE=C LC_NUMERIC=C LANG=C LANGUAGE=C make ARCH=arm
+- unset LC_ALL && LC_COLLATE=C LC_NUMERIC=C make ARCH=arm
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 u-boot.img "$DESTDIR/boot"
-- install -m 755 *.txt "$DESTDIR/boot"
