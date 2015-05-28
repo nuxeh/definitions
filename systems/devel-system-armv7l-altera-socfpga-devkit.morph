@@ -25,10 +25,6 @@ strata:
   morph: strata/python-wsgi.morph
 - name: morph-utils
   morph: strata/morph-utils.morph
-- name: openstack-common
-  morph: strata/openstack-common.morph
-- name: openstack-clients
-  morph: strata/openstack-clients.morph
 - name: nodejs
   morph: strata/nodejs.morph
 - name: ruby
