@@ -1,9 +1,10 @@
 name: u-boot@socfpga-devkit
 kind: chunk
 configure-commands:
-- unset LC_ALL && LC_COLLATE=C LC_NUMERIC=C make ARCH=arm socfpga_cyclone5_config
+- make ARCH=arm socfpga_cyclone5_config
 build-commands:
-- unset LC_ALL && LC_COLLATE=C LC_NUMERIC=C make ARCH=arm
+- make ARCH=arm
+- ls asdlkasdl
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 u-boot.img "$DESTDIR/boot"
