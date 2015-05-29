@@ -18,28 +18,41 @@ chunks:
   unpetrify-ref: v2015.07-rc1
   build-depends:
   - device-tree-compiler
+- name: coreutils
+  morph: strata/coreutils-common/coreutils.morph
+  repo: upstream:coreutils
+  ref: 9df9643842e4b4d8ece710fe6105f32fa38a0d22
+  unpetrify-ref: baserock/8.23
+- name: sed
+  morph: strata/coreutils-common/sed.morph
+  repo: upstream:sed
+  ref: ed4b1d7c04f92b330b940d4f0d02cd51d2473ce9
+  unpetrify-ref: baserock/morph
+  build-depends:
+  - coreutils
 - name: u-boot@socfpga-devkit
   morph: strata/bsp-armv7l-altera-socfpga-devkit/u-boot@socfpga-devkit.morph
-  repo: https://github.com/nuxeh/u-boot.git
-  ref: c101225198c37bf2d3c70b66d8cccc81875ba86a
-  unpetrify-ref: edcragg/baserock-on-socfpga-devkit
+  repo: git://git.rocketboards.org/u-boot-socfpga.git
+  ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
+  unpetrify-ref: socfpga_v2013.01.01
   build-depends:
   - device-tree-compiler
+  - sed
 - name: bsp-support
   morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
   ref: 34eea1272eb38b36780e4a53ab05fc1991b7ad22
   unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
-  - u-boot@socfpga-devkit
+  - u-boot-tools@socfpga-devkit
 - name: preloader@socfpga-devkit
   morph: strata/bsp-armv7l-altera-socfpga-devkit/preloader@socfpga-devkit.morph
-  repo: https://github.com/nuxeh/u-boot.git
-  ref: c101225198c37bf2d3c70b66d8cccc81875ba86a
-  unpetrify-ref: edcragg/baserock-on-socfpga-devkit
+  repo: git://git.rocketboards.org/u-boot-socfpga.git
+  ref: 32c1d91bc0d10beca54c2dfc5b475d4ffeffc15a
+  unpetrify-ref: socfpga_v2013.01.01
   build-depends:
   - bsp-support
-  - u-boot@socfpga-devkit
+  - u-boot-tools@socfpga-devkit
 - name: linux-armv7l-altera-socfpga-devkit
   morph: strata/bsp-armv7l-altera-socfpga-devkit/linux-armv7l-altera-socfpga-devkit.morph
   repo: upstream:linux

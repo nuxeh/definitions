@@ -4,7 +4,6 @@ configure-commands:
 - make ARCH=arm socfpga_cyclone5_config
 build-commands:
 - make ARCH=arm
-- ls asdlkasdl
 install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 u-boot.img "$DESTDIR/boot"
