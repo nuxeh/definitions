@@ -1,0 +1,27 @@
+start_offset: 2048
+partitions:
+- description: pre-loader
+  size: 1M
+  number: 3
+  fdisk_type: A2
+  format: none
+  raw_files:
+  - file: boot/socfpga-preloader.img
+  - file: boot/u-boot.img
+- description: boot
+  number: 1
+  size: 100M
+  format: vfat
+  fdisk_type: 0b
+  files:
+  - file: boot/zImage
+  - file: boot/socfpga-devkit.dtb
+- description: root
+  format: btrfs
+  type: rootfs
+  number: 2
+  size: 6800M
+  fdisk_type: 83
+raw_files:
+- file: boot/socfpga-devkit-env.img
+  offset_bytes: 512
