@@ -14,6 +14,10 @@
 
 
 import contextlib
+try:
+    from contextlib import ExitStack
+except ImportError:
+    from contexter import ExitStack
 import errno
 import fcntl
 import logging
@@ -880,6 +884,8 @@ class WriteExtension(Extension):
         self.create_partition_table(location, partition_data)
         partitions = partition_data['partitions']
         self.create_partition_filesystems(location, partitions, sector_size)
+        self.create_partition_rootfs(temp_root, location,
+                                     partitions, sector_size)
 
     def load_partition_data(self, part_file):
         ''' Load partition data from a yaml specification
@@ -1160,3 +1166,37 @@ class WriteExtension(Extension):
         else:
             raise ExtensionError('Unrecognised filesystem'
                                  ' format: %s' % fstype)
+
+    def create_partition_rootfs(self, temp_root, location,
+                                partitions, sector_size):
+        ''' Create the Baserock root filesystem, and set up partitions
+
+            Create a Baserock system on '/'. Additionally add entries for
+            partitions to the system's /etc/fstab; copy files from the
+            mountpoint in the rootfs to the appropriate partition, or
+            create an empty mountpoint for it
+
+            FIXME: Implement this using a class '''
+
+        self.status(msg='Creating system...')
+
+        with ExitStack() as stack:
+            mountpoints = {partition['mountpoint']:
+                                {'format': partition['format'],
+                                 'uuid': self.get_uuid(location,
+                                                       partition['start'] *
+                                                       sector_size),
+                'mount_dir': stack.enter_context(self.mount(
+                             stack.enter_context(
+                                  self.create_loopback(location,
+                                                       partition['start'] *
+                                                       sector_size,
+                                                       partition['size']))))}
+                           for partition in partitions
+                           if 'mountpoint' in partition}
+
+            root_mount = mountpoints['/']
+            self.create_btrfs_system_layout(temp_root,
+                                            root_mount['mount_dir'],
+                                            'factory', root_mount['uuid'],
+                                            mountpoints)
