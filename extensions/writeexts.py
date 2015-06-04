@@ -384,11 +384,12 @@ class WriteExtension(Extension):
             else:
                 raise
 
-    def get_uuid(self, location):
+    def get_uuid(self, location, offset=0):
         '''Get the UUID of a block device's file system.'''
         # Requires util-linux blkid; busybox one ignores options and
         # lies by exiting successfully.
         return subprocess.check_output(['blkid', '-s', 'UUID', '-o', 'value',
+                                        '-p', '-O', str(offset),
                                         location]).strip()
 
     @contextlib.contextmanager
