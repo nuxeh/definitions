@@ -78,5 +78,69 @@ help: |
 
         (See https://www.kernel.org/doc/Documentation/kernel-parameters.txt)
 
+    * PARTITION_FILE=path: Setting this parameter enables partitioning
+      functions. The path points to a YAML partition specification following
+      the format shown in this example:
+
+            start_offset: 2048
+            partition_table_format: [gpt,dos,mbr]
+            partitions:
+            - description: boot
+              size: 1M
+              fdisk_type: 0b
+              format: vfat
+              boot: yes
+              mountpoint: /boot
+            - description: rootfs
+              number: 3
+              size: fill
+              format: btrfs
+              fdisk_type: 83
+              mountpoint: /
+            raw_files:
+            - file: boot/uboot-env.img
+              offset_bytes: 512
+
+      There are a couple of global attributes:
+
+      - 'start_offset' is mandatory, specifying the start sector of the first
+        partition on the device.
+      - 'partition_table_format' is mandatory, specifying the partition table
+        format to be used when creating the partition table.
+      - Sectors are assumed to be 512 bytes in size. If the logical block size
+        of underlying storage differs from this (e.g. 4096), adjustments are
+        made automatically where needed.
+
+      Following this, up to 4 (for MBR) or 128 (for GPT) partitions can be
+      specified, in the list 'partitions':
+
+      - For each partition, 'size', 'fdisk_type' and 'format' are mandatory.
+        * 'size' is the size in bytes, or 'fill', which will expand the
+          partition to fill any unused space. Only one partition may have
+          this property.
+        * 'fdisk_type' is the partition type, specified as a two-digit
+          hexadecimal value, without a '0x' prefix.
+        * 'format' can be a filesystem with associated mkfs.* tool,
+          or 'none' for an unformatted partition.
+      - 'number' is optional, and can be used to override the numbering of
+        partitions, for MBR partition tables only. The physical order of
+        partitions on the device is always determined by the order in which
+        they are defined in the specification even if the numbering differs.
+      - 'boot' sets the partition's bootable flag.
+      - 'mountpoint' specifies the mountpoint of a partition. One partition
+        must have a '/' mountpoint to contain the rootfs, otherwise this is
+        optional.
+      - Files present in the pointpoint for a given partition will be copied
+        to the created partition.
+
+      - Where a list of 'raw_files' is given, these files are written directly
+        to the device using `dd`.
+        * Files are written consecutively in the order they are listed
+        * Files can be given a specific offset with 'offset' or 'offset_bytes'
+        * The 'raw_files' can exist at the top level of the partition file, or
+          within a partition list item. When specified inside a partition,
+          'offset' or 'offset_bytes' is counted from the start of that
+          partition, otherwise from the start of the device.
+
     (See `morph help deploy` for details of how to pass parameters to write
     extensions)
