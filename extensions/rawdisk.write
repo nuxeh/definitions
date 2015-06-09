@@ -38,25 +38,29 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         temp_root, location = args
         upgrade = self.get_environment_boolean('UPGRADE')
 
-        if upgrade:
+        part_file = os.environ.get('PARTITION_FILE', 'partitioning/default')
+
+        if upgrade and part_file is not None:
+            cliapp.AppException(msg='Upgrades for partitioned devices'
+                                    ' are not currently supported')
+        elif upgrade:
             self.upgrade_local_system(location, temp_root)
         else:
             try:
                 if not self.is_device(location):
                     with self.created_disk_image(location):
-                        self.format_btrfs(location)
-                        self.create_system(temp_root, location)
+                        self.do_partitioning(location, temp_root, part_file)
                     self.status(msg='Disk image has been created at %s' %
                                      location)
                 else:
-                    self.format_btrfs(location)
-                    self.create_system(temp_root, location)
+                    self.do_partitioning(location, temp_root, part_file)
                     self.status(msg='System deployed to %s' % location)
             except Exception:
                 self.status(msg='Failure to deploy system to %s' %
                                  location)
                 raise
 
+    # TODO: Upgrades
     def upgrade_local_system(self, raw_disk, temp_root):
         self.complete_fstab_for_btrfs_layout(temp_root)
 
