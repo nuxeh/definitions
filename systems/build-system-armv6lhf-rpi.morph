@@ -1,4 +1,4 @@
-name: build-system-armv7lhf-jetson
+name: build-system-armv6lhf-rpi-b
 kind: system
 description: The system that should be used for building all other Baserock systems for ARMv6 little-endian hard-float Raspberry Pi A computers.
 arch: armv6lhf
@@ -11,8 +11,8 @@ strata:
   morph: strata/foundation.morph
 - name: python-core
   morph: strata/python-core.morph
-#- name: bsp-jetson
-#  morph: strata/bsp-jetson.morph
+- name: bsp-rpi-b
+  morph: strata/bsp-rpi-b.morph
 - name: tools
   morph: strata/tools.morph
 - name: python-cliapp
