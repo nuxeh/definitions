@@ -1,0 +1,24 @@
+name: bsp-rpi-b
+kind: stratum
+description: |
+  Platform-specific chunks for Raspberry Pi Model B and B+
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: device-tree-compiler
+  morph: strata/bsp-jetson/device-tree-compiler.morph
+  repo: upstream:device-tree-compiler
+  ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
+  unpetrify-ref: v1.4.1
+- name: u-boot@rpi-b
+  morph: strata/bsp-rpi-b/u-boot@rpi-b.morph
+  repo: upstream:u-boot
+  ref: f33cdaa4c3da4a8fd35aa2f9a3172f31cc887b35
+  unpetrify-ref: v2015.04
+  build-depends:
+  - device-tree-compiler
+- name: linux-rpi-b
+  morph: strata/bsp-rpi-b/linux-rpi-b.morph
+  repo: upstream:linux
+  ref:
+  unpetrify-ref: baserock/tegra/4.0-with-cpufreq-gpu
