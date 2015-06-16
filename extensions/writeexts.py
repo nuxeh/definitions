@@ -26,6 +26,7 @@ import subprocess
 import sys
 import time
 import tempfile
+import yaml
 
 
 if sys.version_info >= (3, 3, 0):
@@ -767,3 +768,222 @@ class WriteExtension(Extension):
             return int(m.group(1))
         else:
             raise ExtensionError('Can\'t get sector size for %s' % location)
+
+    def do_partitioning(self, location, temp_root, part_file):
+        ''' The steps required to create a partitioned device or
+            device image
+
+            This includes:
+            - Creating a partition table
+            - Creating filesystems on partitions
+            - Copying files to partitions
+            - Directly writing files to the device
+            - Creating the Baserock system on a partition
+
+            These functions only do anything if configured to do so in a
+            partition specification, see extensions/rawdisk.write.help '''
+
+        partition_data_raw = self.load_partition_data(part_file)
+        sector_size = self.get_sector_size(location)
+        self.status(msg='Using a physical sector size of %d bytes'
+                         % sector_size)
+        partition_data = self.process_partition_data(
+                         partition_data_raw, sector_size)
+
+    def load_partition_data(self, part_file):
+        ''' Load partition data from a yaml specification
+
+            The partition specification format is described in
+            extensions/rawdisk.write.help '''
+
+        try:
+            self.status(msg='Reading partition specification: %s' % part_file)
+            with open(part_file, 'r') as f:
+                return yaml.safe_load(f)
+        except BaseException:
+            self.status(msg='Unable to load partition specification')
+            raise
+
+    def process_partition_data(self, partition_data, sector_size):
+        ''' Calculate offsets, sizes, and numbering for each partition
+
+            This function takes a dict described by the YAML partition
+            specification and returns a modified dict with additional
+            information added to it, in order to fully describe the required
+            partition layout. It also checks for some potential issues in the
+            provided partition specification '''
+
+        partitions = partition_data['partitions']
+        requested_numbers = set(partition['number']
+                            for partition in partitions
+                            if 'number' in partition)
+
+        pt_format = partition_data['partition_table_format']
+        if pt_format == 'gpt':
+            allowed_partitions = 128
+        else:
+            allowed_partitions = 4
+
+        if pt_format not in ('dos', 'mbr', 'gpt'):
+            raise ExtensionError(msg='Unrecognised partition table type')
+
+        # Process partition numbering and boot flag
+        used_numbers = set()
+        seen_mountpoints = set()
+        for partition in partitions:
+            # Find the next unused partition number
+            for n in xrange(1, allowed_partitions + 1):
+                if n not in used_numbers and n not in requested_numbers:
+                    part_num = n
+                    break
+                elif n == allowed_partitions:
+                    raise ExtensionError('A maximum of %d partitions is '
+                                         'supported for %s partition '
+                                         'tables' %
+                                         (allowed_partitions, pt_format))
+
+            if 'number' in partition:
+                if pt_format == 'gpt':
+                    raise ExtensionError('Partition numbering can\'t be '
+                                         'overridden when using a GPT')
+                part_num_req = partition['number']
+                if 1 <= part_num_req <= allowed_partitions:
+                    if part_num_req not in used_numbers:
+                        part_num = part_num_req
+                    else:
+                        raise ExtensionError('Repeated partition number')
+                else:
+                    raise ExtensionError('Requested partition number %s. '
+                                         'A maximum of %d partitions is '
+                                         'supported for %s partition '
+                                         'tables' % (part_num_req,
+                                          allowed_partitions, pt_format))
+
+            partition['number'] = part_num
+            used_numbers.add(part_num)
+
+            # Boot flag
+            if 'boot' in partition:
+                partition['boot'] = self.parse_boolean(partition['boot'])
+            else:
+                partition['boot'] = False
+
+            # Check for duplicated mountpoints
+            if 'mountpoint' in partition:
+                mountpoint = partition['mountpoint']
+                if mountpoint in seen_mountpoints:
+                    raise ExtensionError('Duplicated mountpoint: %s' %
+                                          mountpoint)
+                if mountpoint == '/' and partition['format'] != 'btrfs':
+                    raise ExtensionError('Root filesystem should be btrfs')
+                seen_mountpoints.add(mountpoint)
+
+        # Check for root mountpoint
+        if not '/' in seen_mountpoints:
+            raise ExtensionError('No root partition specified, '
+                                 'please add a partition with '
+                                 'mountpoint \'/\'')
+
+        # Process partition sizes
+        start = (partition_data['start_offset'] * 512) / sector_size
+        # Sector quantities in the specification are assumed to be 512 bytes
+        # This converts to the real sector size
+        min_start_bytes = 1024**2
+        if (start * sector_size) < min_start_bytes:
+            raise ExtensionError('Start offset should be greater than '
+                                 '%d, for %d byte sectors' %
+                                 (min_start_bytes / sector_size,
+                                  sector_size))
+        # Check the disk's first partition starts on a 4096 byte boundary
+        # this ensures alignment, and avoiding a reduction in performance
+        # on disks which use a 4096 byte physical sector size
+        if (start * sector_size) % 4096 != 0:
+            self.status(msg='WARNING: Start sector is not aligned to '
+                            '4096 byte sector boundaries')
+
+        disk_size = self.get_disk_size()
+        if not disk_size:
+            raise ExtensionError('DISK_SIZE is not defined')
+
+        disk_size_sectors = disk_size / sector_size
+        if pt_format == 'gpt':
+            # GPT partition table is duplicated at the end of the device.
+            # GPT header takes one sector, whatever the sector size,
+            # with a 16384 byte 'minimum' area for partition entries,
+            # supporting up to 128 partitions (128 bytes per entry).
+            # The duplicate GPT does not include the 'protective' MBR
+            gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
+            total_usable_sectors = disk_size_sectors - gpt_size_sectors
+        else:
+            total_usable_sectors = disk_size_sectors
+
+        offset = start
+        for partition in partitions:
+            if partition['size'] != 'fill':
+                size_bytes = self._parse_size(str(partition['size']))
+
+                # Calculate sector size, aligned to 4096 byte boundaries
+                size_sectors = (size_bytes / sector_size +
+                               ((size_bytes % 4096) != 0) *
+                               (4096 / sector_size))
+
+                offset += size_sectors
+                partition['size_sectors'] = size_sectors
+                partition['size'] = size_sectors * sector_size
+
+        if len(['' for partition in partitions
+                   if partition['size'] == 'fill']) > 1:
+            raise ExtensionError('Only one partition can '
+                                 'have \'size: fill\'')
+
+        free_sectors = total_usable_sectors - offset
+
+        offset = start
+        total_size = 0
+        last_sector = 0
+        for partition in partitions:
+            # Process filled partition
+            if partition['size'] == 'fill':
+                if free_sectors < 1:
+                    raise ExtensionError(msg='Not enough space to create '
+                                             'fill partition')
+                partition['size_sectors'] = free_sectors
+                partition['size'] = free_sectors * sector_size
+                self.status(msg='Filling partition %s to size: %d bytes' %
+                                 (partition['number'], partition['size']))
+            # Process partition start and end points
+            partition['start'] = offset
+            size_sectors = partition['size_sectors']
+            last_sector = offset + (size_sectors - 1)
+            partition['end'] = last_sector
+            offset += size_sectors
+
+        # Size checks
+        self.status(msg='Requested image size: %s bytes '
+                        '(%d sectors of %d bytes)' %
+                        (last_sector * sector_size, last_sector, sector_size))
+
+        unused_space = total_usable_sectors - last_sector
+        self.status(msg='Unused space: %d bytes (%d sectors)' %
+                         (unused_space * sector_size, unused_space))
+
+        if last_sector > total_usable_sectors:
+            raise ExtensionError('Requested total size exceeds '
+                                 'disk image size DISK_SIZE')
+
+        self.status(msg='Partition summary:')
+        for partition in partitions:
+            self.status(msg='Number:   %s' % str(partition['number']))
+            self.status(msg='  Start:  %s sectors' % str(partition['start']))
+            self.status(msg='  End:    %s sectors' % str(partition['end']))
+            self.status(msg='  Ftype:  %s' % str(partition['fdisk_type']))
+            self.status(msg='  Format: %s' % str(partition['format']))
+            self.status(msg='  Size:   %s bytes' % str(partition['size']))
+
+        # Sort the partitions by partition number
+        new_partitions = sorted(partitions, key=lambda partition:
+                                partition['number'])
+
+        new_partition_data = partition_data
+        new_partition_data['partitions'] = new_partitions
+        return new_partition_data
