@@ -469,6 +469,14 @@ class WriteExtension(Extension):
         for state_dir in state_dirs:
             self.create_state_subvolume(system_dir, mountpoint, state_dir)
 
+        # Populate partitions
+        if part_info is not None:
+            for partition in part_info:
+                if partition != '/':
+                    partition_info = part_info[partition]
+                    self.move_partition_files(system_dir, partition,
+                                              partition_info['mount_dir'])
+
         self.create_run(version_root)
 
         os.symlink(
@@ -528,6 +536,31 @@ class WriteExtension(Extension):
         for filename in files:
             filepath = os.path.join(existing_state_dir, filename)
             subprocess.check_call(['mv', filepath, subvolume])
+
+    def move_partition_files(self, system_dir, partition, partition_mount):
+        ''' Move files from the unpacked rootfs to partitions
+
+            Move files from the mount dir for a given partition in the
+            unpacked rootfs, to the actual mounted partition, leaving an empty
+            mountpoint in the rootfs. If no existing directory is present in
+            the rootfs, create an empty directory in the rootfs to be used as
+            the partition's mount point '''
+
+        existing_part_dir = os.path.join(system_dir,
+                                         re.sub('^/', '', partition))
+        files = []
+        if os.path.exists(existing_part_dir):
+            files = os.listdir(existing_part_dir)
+        else:
+            self.status(msg='Creating empty mountpoint for %s partition' %
+                             partition)
+            os.mkdir(existing_part_dir)
+        if len(files) > 0:
+            self.status(msg='Moving existing data to %s partition' %
+                             partition)
+        for filename in files:
+            filepath = os.path.join(existing_part_dir, filename)
+            subprocess.check_call(['mv', filepath, partition_mount])
 
     def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None,
                                         part_info=None):
