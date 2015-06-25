@@ -449,7 +449,7 @@ class WriteExtension(Extension):
             subprocess.check_call(['losetup', '-d', device])
 
     def create_btrfs_system_layout(self, temp_root, mountpoint, version_label,
-                                   disk_uuid):
+                                   disk_uuid, part_info=None):
         '''Separate base OS versions from state using subvolumes.
 
         '''
@@ -464,7 +464,7 @@ class WriteExtension(Extension):
         system_dir = os.path.join(version_root, 'orig')
 
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
-                                                          disk_uuid)
+                                                        disk_uuid, part_info)
 
         for state_dir in state_dirs:
             self.create_state_subvolume(system_dir, mountpoint, state_dir)
@@ -566,6 +566,24 @@ class WriteExtension(Extension):
                 fstab.add_line(
                         '%s  /%s  btrfs subvol=%s,defaults,rw,noatime 0 2' %
                         (root_device, state_dir, state_subvol))
+
+        # Add entries for partitions
+        if part_info is not None:
+            for partition in part_info:
+                if partition != '/':
+                    partition_info = part_info[partition]
+                    if partition not in existing_mounts:
+                        f_uuid = (partition_info['uuid'],
+                                  partition, partition_info['format'])
+                        self.status(msg='Adding fstab entry for partition %s,'
+                                        ' UUID=%s, format=%s' %
+                                        (f_uuid[1], f_uuid[0], f_uuid[2]))
+                        fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
+                                       '0 2' % f_uuid)
+                    else:
+                        self.status(msg='WARNING: an entry already exists in '
+                                        'fstab for partition %s, skipping'
+                                        % partition)
 
         fstab.write()
         return state_dirs_to_create
