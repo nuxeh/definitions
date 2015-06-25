@@ -484,14 +484,25 @@ class WriteExtension(Extension):
         os.chmod(subvolume, 0o755)
 
         existing_state_dir = os.path.join(system_dir, state_subdir)
+        self.move_or_copy_dir(existing_state_dir, subvolume)
+
+    def move_or_copy_dir(self, source_dir, target_dir, copy=False):
+        '''Move or copy all files source_dir, to target_dir'''
+
+        cmd = 'mv'
+        act = 'Mov'
+        if copy:
+            cmd = 'cp'
+            act = 'Copy'
+
         files = []
-        if os.path.exists(existing_state_dir):
-            files = os.listdir(existing_state_dir)
+        if os.path.exists(source_dir):
+            files = os.listdir(source_dir)
         if len(files) > 0:
-            self.status(msg='Moving existing data to %s subvolume' % subvolume)
+            self.status(msg='%sing existing data to %s' % (act, target_dir))
         for filename in files:
-            filepath = os.path.join(existing_state_dir, filename)
-            subprocess.check_call(['mv', filepath, subvolume])
+            filepath = os.path.join(source_dir, filename)
+            subprocess.check_call([cmd, filepath, target_dir])
 
     def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None):
         '''Fill in /etc/fstab entries for the default Btrfs disk layout.
