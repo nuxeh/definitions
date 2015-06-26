@@ -15,10 +15,9 @@
 
 import contextlib
 try:
-    # TODO: try importing from contextlib first
-    from contexter import ExitStack
+    from contextlib import ExitStack
 except ImportError:
-    pass
+    from contexter import ExitStack
 import errno
 import fcntl
 import logging
@@ -1038,7 +1037,7 @@ class WriteExtension(Extension):
                     raise ExtensionError(msg='Not enough space to create '
                                              'fill partition')
                 partition['size_sectors'] = free_sectors
-                partition['size'] = size_sectors * sector_size
+                partition['size'] = free_sectors * sector_size
                 self.status(msg='Filling partition %s to size: %d bytes' %
                                  (partition['number'], partition['size']))
             # Process partition start and end points
@@ -1118,8 +1117,8 @@ class WriteExtension(Extension):
         # Write changes
         cmd += ("w\n"
                 "q\n")
-        with subprocess.Popen(["fdisk", location], stdin=PIPE) as p:
-            p.communicate(cmd)
+        p = subprocess.Popen(["fdisk", location], stdin=subprocess.PIPE)
+        p.communicate(cmd)
 
     def create_partition_filesystems(self, location, partitions, sector_size):
         ''' Read partition data and create all required filesystems '''

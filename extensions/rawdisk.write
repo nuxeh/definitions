@@ -47,16 +47,13 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             self.upgrade_local_system(location, temp_root)
         else:
             try:
-                partition_data = self.load_partition_data(part_file)
                 if not self.is_device(location):
                     with self.created_disk_image(location):
-                        self.do_partitioning(location, temp_root,
-                                             partition_data)
+                        self.do_partitioning(location, temp_root, part_file)
                     self.status(msg='Disk image has been created at %s' %
                                      location)
                 else:
-                    self.do_partitioning(location, temp_root,
-                                         partition_data)
+                    self.do_partitioning(location, temp_root, part_file)
                     self.status(msg='System deployed to %s' % location)
             except Exception:
                 self.status(msg='Failure to deploy system to %s' %
