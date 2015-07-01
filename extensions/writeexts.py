@@ -1078,6 +1078,8 @@ class WriteExtension(Extension):
                                           partition['start'] *
                                           sector_size,
                                           partition['size']) as device:
+                    self.status(msg='Creating filesystem on partition %d' %
+                                     partition['number'])
                     self.create_filesystem(device, filesystem)
 
     def create_filesystem(self, block_device, fstype):
