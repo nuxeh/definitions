@@ -865,6 +865,8 @@ class WriteExtension(Extension):
                 if mountpoint in seen_mountpoints:
                     raise ExtensionError('Duplicated mountpoint: %s' %
                                           mountpoint)
+                if mountpoint == '/' and partition['format'] != 'btrfs':
+                    raise ExtensionError('Root filesystem should be btrfs')
                 seen_mountpoints.add(mountpoint)
 
         # Check for root mountpoint
