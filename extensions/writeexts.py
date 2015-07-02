@@ -758,7 +758,7 @@ class WriteExtension(Extension):
 
     @staticmethod
     def get_sector_size(location):
-        ''' Get the underlying physical sector size of a device or image '''
+        ''' Get the logical sector size of a device or image '''
 
         fdisk_output = subprocess.check_output(['fdisk', '-l', location])
         r = re.compile('.*Sector size.*?(\d+) bytes', re.DOTALL)
@@ -766,5 +766,4 @@ class WriteExtension(Extension):
         if m:
             return int(m.group(1))
         else:
-            raise ExtensionError('Can\'t get physical sector '
-                                 'size for %s' % location)
+            raise ExtensionError('Can\'t get sector size for %s' % location)
