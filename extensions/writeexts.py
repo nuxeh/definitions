@@ -1245,3 +1245,51 @@ class WriteExtension(Extension):
                                          'not directories')
             else:
                 raise ExtensionError('File not found: %s' % source)
+
+    def do_upgrade(self, location, temp_root, part_file):
+
+        # Split this out?
+        partition_data_raw = self.load_partition_data(part_file)
+        sector_size = self.get_sector_size(location)
+        partition_data = self.process_partition_data(
+                         partition_data_raw, sector_size)
+
+        self.complete_fstab_for_btrfs_layout(temp_root)
+
+        try:
+            # Maintain compatibility with unpartitioned images. These will
+            # fail to mount as there will be no filesystem starting at the
+            # first byte of the image.
+            with self.mount(location) as mp:
+                self.upgrade_local_system(mp, temp_root)
+        except CalledProcessError:
+            with ExitStack() as stack:
+                mountpoints = {partition['mountpoint']:
+                                  {'format': partition['format'],
+                                   'uuid': self.get_uuid(location,
+                                                         partition['start'] *
+                                                         sector_size),
+                  'mount_dir': stack.enter_context(self.mount(
+                               stack.enter_context(
+                                  self.create_loopback(location,
+                                                       partition['start'] *
+                                                       sector_size,
+                                                       partition['size']))))}
+                               for partition in partitions
+                               if 'mountpoint' in partition}
+
+                root_mount = mountpoints['/']
+                self.upgrade_local_system(root_mount['mount_dir'], temp_root)
+
+                print mountpoints
+                for mountpoint in mountpoints:
+                    if mountpoint != '/':
+                        mountpoint_info = mountpoints[mountpoint]
+                        print mountpoint_info
+                        source = os.path.join(temp_root,
+                                              re.sub('^/', '', mountpoint))
+                        dest = mountpoint_info['mount_dir']
+                        print 'rsync -a ... %s %s' % (source + os.path.sep, dest)
+#                        subprocess.check_call(['rsync', '-a', '--checksum',
+ #                                              '--numeric-ids', '--delete',
+  #                                             source + os.path.sep, dest])

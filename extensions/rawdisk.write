@@ -40,11 +40,8 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 
         part_file = os.environ.get('PARTITION_FILE', 'partitioning/default')
 
-        if upgrade and part_file is not None:
-            cliapp.AppException(msg='Upgrades for partitioned devices'
-                                    ' are not currently supported')
-        elif upgrade:
-            self.upgrade_local_system(location, temp_root)
+        if upgrade:
+            self.do_upgrade(location, temp_root, part_file)
         else:
             try:
                 if not self.is_device(location):
@@ -60,11 +57,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                  location)
                 raise
 
-    # TODO: Upgrades
-    def upgrade_local_system(self, raw_disk, temp_root):
-        self.complete_fstab_for_btrfs_layout(temp_root)
-
-        with self.mount(raw_disk) as mp:
+    def upgrade_local_system(self, root_mount, temp_root):
             version_label = self.get_version_label(mp)
             self.status(msg='Updating image to a new version with label %s' %
                         version_label)
