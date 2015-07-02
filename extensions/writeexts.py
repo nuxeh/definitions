@@ -904,7 +904,7 @@ class WriteExtension(Extension):
             # supporting up to 128 partitions (128 bytes per entry).
             # The duplicate GPT does not include the 'protective' MBR
             gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
-            total_usable_sectors = (disk_size_sectors - gpt_size_sectors
+            total_usable_sectors = disk_size_sectors - gpt_size_sectors
         else:
             total_usable_sectors = disk_size_sectors
 
