@@ -529,7 +529,8 @@ class WriteExtension(Extension):
             filepath = os.path.join(existing_state_dir, filename)
             subprocess.check_call(['mv', filepath, subvolume])
 
-    def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None):
+    def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None,
+                                        part_info=None):
         '''Fill in /etc/fstab entries for the default Btrfs disk layout.
 
         In the future we should move this code out of the write extension and
