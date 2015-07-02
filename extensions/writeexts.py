@@ -902,12 +902,11 @@ class WriteExtension(Extension):
             # GPT header takes one sector, whatever the sector size,
             # with a 16384 byte 'minimum' area for partition entries,
             # supporting up to 128 partitions (128 bytes per entry).
-            # The duplicate GPT does not include the protective MBR
+            # The duplicate GPT does not include the 'protective' MBR
             gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
-            total_usable_sectors = (disk_size_sectors -
-                                   (start + gpt_size_sectors))
+            total_usable_sectors = (disk_size_sectors - gpt_size_sectors
         else:
-            total_usable_sectors = disk_size_sectors - start
+            total_usable_sectors = disk_size_sectors
 
         offset = start
         for partition in partitions:
@@ -954,6 +953,7 @@ class WriteExtension(Extension):
         self.status(msg='Requested image size: %s bytes '
                         '(%d sectors of %d bytes)' %
                         (last_sector * sector_size, last_sector, sector_size))
+
         unused_space = total_usable_sectors - last_sector
         self.status(msg='Unused space: %d bytes (%d sectors)' %
                          (unused_space * sector_size, unused_space))
@@ -962,6 +962,7 @@ class WriteExtension(Extension):
             raise ExtensionError('Requested total size exceeds '
                                  'disk image size DISK_SIZE')
 
+        self.status(msg='Partition summary:')
         for partition in partitions:
             self.status(msg='Number:   %s' % str(partition['number']))
             self.status(msg='  Start:  %s sectors' % str(partition['start']))
