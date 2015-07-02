@@ -1025,5 +1025,6 @@ class WriteExtension(Extension):
                 "q\n")
         p = subprocess.Popen(["fdisk", location],
                              stdin=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
         p.communicate(cmd)
