@@ -3,6 +3,13 @@
 Contexter is a full replacement of the contextlib standard library
 module. It comes with more features, a nicer API and full support for
 Python 2.5 up to 3.x from a single source file.
+
+NOTE: This file is added to the Baserock project in order to provide
+ExitStack() when using Python 2, since this function is not provided
+in contextlib for Python below version 3. This may be removed with a
+transition to Python 3, or otherwise with changes to the way mounts
+are handled when creating Baserock root filesystems when using
+partitioning
 """
 
 __author__ = 'Marcel Hellkamp'
