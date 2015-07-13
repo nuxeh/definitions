@@ -528,14 +528,7 @@ class WriteExtension(Extension):
         os.chmod(subvolume, 0o755)
 
         existing_state_dir = os.path.join(system_dir, state_subdir)
-        files = []
-        if os.path.exists(existing_state_dir):
-            files = os.listdir(existing_state_dir)
-        if len(files) > 0:
-            self.status(msg='Moving existing data to %s subvolume' % subvolume)
-        for filename in files:
-            filepath = os.path.join(existing_state_dir, filename)
-            subprocess.check_call(['mv', filepath, subvolume])
+        self.move_files(existing_state_dir, subvolume)
 
     def move_partition_files(self, system_dir, partition, partition_mount):
         ''' Move files from the unpacked rootfs to partitions
@@ -548,19 +541,26 @@ class WriteExtension(Extension):
 
         existing_part_dir = os.path.join(system_dir,
                                          re.sub('^/', '', partition))
-        files = []
-        if os.path.exists(existing_part_dir):
-            files = os.listdir(existing_part_dir)
-        else:
+
+        if not os.path.exists(existing_part_dir):
             self.status(msg='Creating empty mountpoint for %s partition' %
                              partition)
             os.mkdir(existing_part_dir)
+        else:
+            self.status(msg='Moving files to %s partition' % partition)
+            self.move_files(existing_part_dir, partition_mount)
+
+    def move_files(self, source_dir, target_dir):
+        ''' Move all files in a source directory, to a target directory '''
+
+        files = []
+        if os.path.exists(source_dir):
+            files = os.listdir(source_dir)
         if len(files) > 0:
-            self.status(msg='Moving existing data to %s partition' %
-                             partition)
+            self.status(msg='Moving existing data to %s' % target_dir)
         for filename in files:
-            filepath = os.path.join(existing_part_dir, filename)
-            subprocess.check_call(['mv', filepath, partition_mount])
+            filepath = os.path.join(source_dir, filename)
+            subprocess.check_call(['mv', filepath, target_dir])
 
     def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None,
                                         part_info=None):
