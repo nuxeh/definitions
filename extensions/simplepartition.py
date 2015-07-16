@@ -16,34 +16,38 @@
 
 # jsonschema
 
-''' A simple Python module for creating partitioned devices or images '''
+''' A simple Python module for creating partitioned devices or images
+
+    It is intended to work on Linux, though may work on other operating
+    systems using fdisk from util-linux '''
 
 import subprocess
 import yaml
 
 class Partition(object):
-    ''' A class to describe a partition in a disk or image
+    '''
+    A class to describe a partition in a disk or image
 
-        The required attributes are loaded as key-value pairs from a dict.
-        
-        Required attributes:
-          * size: String describing the size of the partition in bytes (TODO human readable?).
-                  This may also be 'fill' to expand this partition to fill used space (TODO: normalise)
-          * format: A string describing the filesystem format for the
-                    partition, or 'none' to skip filesystem creation
-          * fdisk_type: A number describing the hexadecimal code used by fdisk
-                        to describe the partition type (TODO: string + validate)
+    The required attributes are loaded as key-value pairs from a dict.
 
-        Optional attributes:
-          * description: A string describing the partition
-          * boot: Boolean describing whether the bootable flag should be set
-          * mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
-          * number: Number used to override partition numbering for the
-                    partition (MBR only)
-          * '''
+    Required attributes:
+      * size: String describing the size of the partition in bytes (TODO human readable?).
+              This may also be 'fill' to expand this partition to fill used space (TODO: normalise)
+      * format: A string describing the filesystem format for the
+                partition, or 'none' to skip filesystem creation
+      * fdisk_type: A number describing the hexadecimal code used by fdisk
+                    to describe the partition type (TODO: string + validate)
 
-    def __init__(self, **partition):
-        self.__dict__.update(partition)
+    Optional attributes:
+      * description: A string describing the partition
+      * boot: Boolean describing whether the bootable flag should be set
+      * mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
+      * number: Number used to override partition numbering for the
+                partition (MBR only)
+    '''
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
     self.boot_flag = False
     raw_files = []
@@ -51,30 +55,23 @@ class Partition(object):
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
 class PartitionInfo(object):
-    ''' A class to describe a disk or image, and the partition layout
-        used inside it
+    '''
+    A class to describe a disk or image, and the partition layout
+    used inside it
 
-        The required attributes are loaded from a dict, containing key-value
-        pairs describing the required attributes. This may be loaded
-        from a YAML specification using the module function loadYAML().
+    The required attributes are loaded from a dict, containing key-value
+    pairs describing the required attributes. This may be loaded
+    from a YAML specification using the module function loadYAML().
 
-        Attributes:
-          * disk_size: Number or string describing the total disk size in
-                       bytes (TODO: or 'fill' for a real device ?)
-          * start_sector: The first 512 byte sector of the first partition
-          * partition_table_format: A string describing the type of partition
-                                    table used on the device
-          * partitions: A list containing the attributes for each partition
-                        object as a dict (see class Partition)
-
-          * root_partition: The index of the partition in
-          
-          
-        '''
-
-    # Overall disk properties
-    self.start_sector = 2048
-    self.partition_table_format = 'gpt'
+    Attributes:
+      * disk_size: Number or string describing the total disk size in
+                   bytes (TODO: or 'fill' for a real device ?)
+      * start_sector: The first 512 byte sector of the first partition
+      * partition_table_format: A string describing the type of partition
+                                table used on the device
+      * partitions: A list containing the attributes for each partition
+                    object as a dict (see class Partition)
+    '''
 
     def __init__(self, ):
         # List to hold partitions
@@ -82,17 +79,47 @@ class PartitionInfo(object):
 
         self.numPartitions()
 
+        self.updatePartitions()
 
-    def _update_partition(self, partition)
-        new_part = Partition(**partition)
-        self.partitions.append(new_part)
+    def addPartition(self, kwargs):
+        '''
+        Add a partition by dict of attributes
+        '''
+        partition = Partition(**kwargs)
+        self.partitions.append(partition)
+
+    def appendPartition(self, partition):
+        '''
+        Add a partition as an instance of Partition
+        '''
+        if isinstance(partition, Partition) 
+            self.partitions.append(partition)
+
+    def _updatePartitions(self):
+        for partition in partitions:
+            self.addPartition(partition)
 
     def getPartitionByMountpoint(self, mountpoint):
-        ''' Get the partition object by its mountpoint '''
+        '''
+        Get the partition object by its mountpoint
+        '''
                 
 
+def loadYAML(yamlFile):
+    '''
+    Load partition data from a yaml specification
 
-class simplepartitioning():
+    The YAML file describes the attributes documented in the PartitionInfo
+    and Partition classes. A simple example might be:
+            
+    '''
+    print 'Reading partition specification: %s' % part_file
+    with open(yamlFile, 'r') as f:
+        kwargs = yaml.safe_load(f)
+    
+
+
+class SimplePartitioning():
 
     @staticmethod
     def get_sector_size(location):
@@ -106,19 +133,11 @@ class simplepartitioning():
         else:
             raise ExtensionError('Can\'t get sector size for %s' % location)
 
+    @staticmethod
+    def get_disk_size():
+        # Get the size of a real device
+
     def load_partition_data(self, part_file):
-        ''' Load partition data from a yaml specification
-
-            The partition specification format is described in
-            extensions/rawdisk.write.help '''
-
-        try:
-            self.status(msg='Reading partition specification: %s' % part_file)
-            with open(part_file, 'r') as f:
-                return yaml.safe_load(f)
-        except BaseException:
-            self.status(msg='Unable to load partition specification')
-            raise
 
     def process_partition_data(self, partition_data, sector_size):
         ''' Calculate offsets, sizes, and numbering for each partition
