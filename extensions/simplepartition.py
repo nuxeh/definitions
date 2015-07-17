@@ -15,6 +15,8 @@
 
 
 # jsonschema
+# Partitioning error handling class - geometry error?
+# Pretty printing / pretty input
 
 ''' A simple Python module for creating partitioned devices or images
 
@@ -23,6 +25,7 @@
 
 import subprocess
 import yaml
+# staticmethod
 
 class Partition(object):
     '''
@@ -44,6 +47,7 @@ class Partition(object):
       * mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
       * number: Number used to override partition numbering for the
                 partition (MBR only)
+      * TODO: label
     '''
 
     def __init__(self, **kwargs):
@@ -54,8 +58,8 @@ class Partition(object):
 
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
-class PartitionInfo(object):
-    '''
+class Device(object):
+    """
     A class to describe a disk or image, and the partition layout
     used inside it
 
@@ -64,46 +68,70 @@ class PartitionInfo(object):
     from a YAML specification using the module function loadYAML().
 
     Attributes:
-      * disk_size: Number or string describing the total disk size in
-                   bytes (TODO: or 'fill' for a real device ?)
-      * start_sector: The first 512 byte sector of the first partition
-      * partition_table_format: A string describing the type of partition
-                                table used on the device
-      * partitions: A list containing the attributes for each partition
-                    object as a dict (see class Partition)
-    '''
+    * location: The location of the device or disk image
+    * size: The size in bytes (or a TODO human readable string) describing
+            the total amount of space the partition table on the device
+            will occupy
+    * parts: A list of Partition objects describing the partitions on the
+             device
+    * disk_size: Number or string describing the total disk size in
+                 bytes (TODO: or 'fill' for a real device ?)
+    * start_sector: The first 512 byte sector of the first partition
+    * partition_table_format: A string describing the type of partition
+                              table used on the device
+    * partitions: A list containing the attributes for each partition
+                  object as a dict (see class Partition)
+    """
 
-    def __init__(self, ):
-        # List to hold partitions
-        self.partitions = []
+# Creating images?
 
-        self.numPartitions()
+    def __init__(self, location, size, **kwargs):
+        self.parts = []
+        if 'partition_table_format' not in kwargs:
+            self.partition_table_format = 'gpt'
+        if 'start_offset' not in kwargs:
+            self.start_offset = 2048
 
+        self.__dict__.update(kwargs)
         self.updatePartitions()
 
-    def addPartition(self, kwargs):
+        self.location = location
+        self.size = getBytes(size)
+
+        self.valid = False
+    
+    def addPartition(self, **kwargs):
         '''
         Add a partition by dict of attributes
+
+        See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
         self.partitions.append(partition)
 
-    def appendPartition(self, partition):
-        '''
-        Add a partition as an instance of Partition
-        '''
-        if isinstance(partition, Partition) 
-            self.partitions.append(partition)
-
-    def _updatePartitions(self):
-        for partition in partitions:
+    def updatePartitions(self):
+        parts = []
+        for partition in self.partitions:
             self.addPartition(partition)
 
     def getPartitionByMountpoint(self, mountpoint):
         '''
         Get the partition object by its mountpoint
         '''
-                
+
+    def verify(self):
+        simplepartition.verify(self)
+
+    def commit(self):
+        """
+        Write the partition table to disk
+        """
+        simplepartition.verify(self)
+        simplepartition.commit(self)
+
+    def __str__(self):
+
+    def 
 
 def loadYAML(yamlFile):
     '''
@@ -119,7 +147,61 @@ def loadYAML(yamlFile):
     
 
 
-class SimplePartitioning():
+class simplepartition():
+
+    @staticmethod
+    def commitDevice(device):
+        """
+        Write the partition table to device
+
+        @param device: A device object to perform the partitioning on
+        @type device:  Device
+        """
+        pt_format = device.partition_table_format.lower
+        print("Creating %s partition table on %s" %
+                        (pt_format.upper(), device.location))
+
+        # Create a new partition table
+        if pt_format in ('mbr', 'dos'):
+            cmd = "o\n"
+        elif pt_format == 'gpt':
+            cmd = "g\n"
+
+        for partition in device.parts:
+            # Create partitions
+            if partition.fdisk_type != 'none':
+                cmd += "n\n"
+                if pt_format in ('mbr', 'dos'):
+                    cmd += "p\n"
+                cmd += (str(partition.number) + "\n"
+                        "" + str(partition.start) + "\n"
+                        "" + str(partition.end) + "\n")
+
+                # Set partition types
+                cmd += "t\n"
+                if partition.number > 1:
+                    # fdisk does not ask for a partition
+                    # number when setting the type of the
+                    # first created partition
+                    cmd += str(partition.number) + "\n"
+                cmd += str(partition.fdisk_type) + "\n"
+
+                # Set bootable flag
+                if partition.boot:
+                    cmd += "a\n"
+                    if partition.number > 1:
+                        cmd += str(partition.number) + "\n"
+
+        # Write changes
+        cmd += ("w\n"
+                "q\n")
+        p = subprocess.Popen(["fdisk", device.location],
+                             stdin=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
+        p.communicate(cmd)
+
+
 
     @staticmethod
     def get_sector_size(location):
@@ -139,7 +221,7 @@ class SimplePartitioning():
 
     def load_partition_data(self, part_file):
 
-    def process_partition_data(self, partition_data, sector_size):
+    def verifyDevice(self, device): # TODO sector size
         ''' Calculate offsets, sizes, and numbering for each partition
 
             This function takes a dict described by the YAML partition
@@ -148,9 +230,8 @@ class SimplePartitioning():
             partition layout. It also checks for some potential issues in the
             provided partition specification '''
 
-        partitions = partition_data['partitions']
         requested_numbers = set(partition['number']
-                            for partition in partitions
+                            for partition in parts
                             if 'number' in partition)
 
         pt_format = partition_data['partition_table_format']
@@ -326,47 +407,3 @@ class SimplePartitioning():
     def create_partition_table(self, location, partition_data):
         ''' Use fdisk to create a partition table '''
 
-        pt_format = partition_data['partition_table_format'].lower()
-        self.status(msg="Creating %s partition table on %s" %
-                        (pt_format.upper(), location))
-
-        # Create a new partition table
-        if pt_format in ('mbr', 'dos'):
-            cmd = "o\n"
-        elif pt_format == 'gpt':
-            cmd = "g\n"
-
-        for partition in partition_data['partitions']:
-            part_num = partition['number']
-            # Create partitions
-            if partition['fdisk_type'] != 'none':
-                cmd += "n\n"
-                if pt_format in ('mbr', 'dos'):
-                    cmd += "p\n"
-                cmd += (str(part_num) + "\n"
-                        "" + str(partition['start']) + "\n"
-                        "" + str(partition['end']) + "\n")
-
-                # Set partition types
-                cmd += "t\n"
-                if part_num > 1:
-                    # fdisk does not ask for a partition
-                    # number when setting the type of the
-                    # first created partition
-                    cmd += str(part_num) + "\n"
-                cmd += str(partition['fdisk_type']) + "\n"
-
-                # Set bootable flag
-                if partition['boot']:
-                    cmd += "a\n"
-                    if part_num > 1:
-                        cmd += str(part_num) + "\n"
-
-        # Write changes
-        cmd += ("w\n"
-                "q\n")
-        p = subprocess.Popen(["fdisk", location],
-                             stdin=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             stdout=subprocess.PIPE)
-        p.communicate(cmd)
