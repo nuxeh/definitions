@@ -18,43 +18,81 @@
 # Partitioning error handling class - geometry error?
 # Pretty printing / pretty input
 
-''' A simple Python module for creating partitioned devices or images
+"""
+A simple Python module for creating partitioned devices or images
 
-    It is intended to work on Linux, though may work on other operating
-    systems using fdisk from util-linux '''
+This creates partitions by making calls to the fdisk command line
+tool.
+
+It is intended to work on Linux, though may work on other operating
+systems using fdisk from util-linux.
+
+Requires fdisk <versions>
+
+"""
 
 import subprocess
 import yaml
 # staticmethod
 
+class Extent(object):
+    """
+    A class to hold start and end points for other objects (Devices, Partitions)
+    with sectors of a given size
+    """
+
+    def __init__(self, sector_size=512, start=0, end=0, fill=False):
+        self.sector_size = int(sector_size)
+        if fill:
+            self.start = 0
+            self.end = 0
+            self.fill = True
+        else:
+            self.start = int(start)
+            self.end = int(end)
+            self.fill = False
+
+    def __str__(self):
+        return '<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
+                (self.start, self.end, self.__len__())
+
+    def __max__(self):
+        return self.end
+
+    def __min__(self):
+        return self.start
+
+    def __len__(self):
+        """
+        Return the length in bytes
+        """
+        return (self.end - self.start) * sector_size
+
 class Partition(object):
-    '''
+    """
     A class to describe a partition in a disk or image
 
     The required attributes are loaded as key-value pairs from a dict.
 
     Required attributes:
-      * size: String describing the size of the partition in bytes (TODO human readable?).
+        size: String describing the size of the partition in bytes (TODO human readable?).
               This may also be 'fill' to expand this partition to fill used space (TODO: normalise)
-      * format: A string describing the filesystem format for the
+        format: A string describing the filesystem format for the
                 partition, or 'none' to skip filesystem creation
-      * fdisk_type: A number describing the hexadecimal code used by fdisk
+        fdisk_type: A number describing the hexadecimal code used by fdisk
                     to describe the partition type (TODO: string + validate)
 
     Optional attributes:
-      * description: A string describing the partition
-      * boot: Boolean describing whether the bootable flag should be set
-      * mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
-      * number: Number used to override partition numbering for the
+        description: A string describing the partition
+        boot: Boolean describing whether the bootable flag should be set
+        mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
+        number: Number used to override partition numbering for the
                 partition (MBR only)
-      * TODO: label
-    '''
+        TODO: label
+    """
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
-
-    self.boot_flag = False
-    raw_files = []
 
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
@@ -68,19 +106,19 @@ class Device(object):
     from a YAML specification using the module function loadYAML().
 
     Attributes:
-    * location: The location of the device or disk image
-    * size: The size in bytes (or a TODO human readable string) describing
-            the total amount of space the partition table on the device
-            will occupy
-    * parts: A list of Partition objects describing the partitions on the
-             device
-    * disk_size: Number or string describing the total disk size in
-                 bytes (TODO: or 'fill' for a real device ?)
-    * start_sector: The first 512 byte sector of the first partition
-    * partition_table_format: A string describing the type of partition
-                              table used on the device
-    * partitions: A list containing the attributes for each partition
-                  object as a dict (see class Partition)
+        location: The location of the device or disk image
+        size: The size in bytes (or a TODO human readable string) describing
+              the total amount of space the partition table on the device
+              will occupy
+        parts: A list of Partition objects describing the partitions on the
+               device
+        disk_size: Number or string describing the total disk size in
+                   bytes (TODO: or 'fill' for a real device ?)
+        start_sector: The first 512 byte sector of the first partition
+        partition_table_format: A string describing the type of partition
+                                table used on the device
+        partitions: A list containing the attributes for each partition
+                    object as a dict (see Partition)
     """
 
 # Creating images?
@@ -96,9 +134,11 @@ class Device(object):
         self.updatePartitions()
 
         self.location = location
-        self.size = getBytes(size)
+        self.size = getBytes(size) #TODO
 
-        self.valid = False
+        self.extent = Extent(
+
+        self.mountpoints = set()
     
     def addPartition(self, **kwargs):
         '''
@@ -107,10 +147,23 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
+        if hasattr(partition, 'mountpoint'):
+            if partition.mountpoint in self.mountpoints:
+                raise PartitioningError('Duplicated mountpoint: %s' %
+                                         mountpoint)
+        self.mountpoints.add(partition.mountpoint)
         self.partitions.append(partition)
 
-    def updatePartitions(self):
-        parts = []
+    def updatePartitions(self, partitions=None)
+        """
+        Populate parts with Partition objects
+
+        @param partitions: List of partition attributes
+        @type partitions:  list
+        """
+        self.parts = []
+        if partitions:
+            self.partitions = partitions
         for partition in self.partitions:
             self.addPartition(partition)
 
@@ -130,25 +183,38 @@ class Device(object):
         simplepartition.commit(self)
 
     def __str__(self):
+        return 'Device: location=%s, size=%s' % (self.location, self.size)
 
-    def 
 
-def loadYAML(yamlFile):
-    '''
-    Load partition data from a yaml specification
+class PartitioningError(Exception):
 
-    The YAML file describes the attributes documented in the PartitionInfo
-    and Partition classes. A simple example might be:
-            
-    '''
-    print 'Reading partition specification: %s' % part_file
-    with open(yamlFile, 'r') as f:
-        kwargs = yaml.safe_load(f)
-    
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 
 class simplepartition():
 
+    def loadYAML(yamlFile):
+        '''
+        Load partition data from a yaml specification
+
+        The YAML file describes the attributes documented in the PartitionInfo
+        and Partition classes. A simple example might be:
+
+        @param yaml_file: Path to a YAML file to load
+        @type yaml_file:  str
+
+        @return Device
+        @rtype Device
+            
+        '''
+        with open(yamlFile, 'r') as f:
+            kwargs = yaml.safe_load(f)
+        return Device(location, size, **kwargs)
+    
     @staticmethod
     def commitDevice(device):
         """
@@ -201,25 +267,27 @@ class simplepartition():
                              stdout=subprocess.PIPE)
         p.communicate(cmd)
 
+    def getSectorSize(self, location):
+        """
+        Get the logical sector size of a device or image, in bytes
+        """
+        return int(self.__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
+                                                location))
 
+    def getDiskSize(self, location):
+        """
+        Get the total size of a real block device or image, in bytes
+        """
+        return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
+                                                location))
 
-    @staticmethod
-    def get_sector_size(location):
-        ''' Get the logical sector size of a device or image '''
-
-        fdisk_output = subprocess.check_output(['fdisk', '-l', location])
-        r = re.compile('.*Sector size.*?(\d+) bytes', re.DOTALL)
-        m = re.match(r, fdisk_output)
+    def __filterFdiskListOutput(self, regex, location):
+        r = re.compile(regex, re.DOTALL)
+        m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
         if m:
-            return int(m.group(1))
+            return m.group(1)
         else:
-            raise ExtensionError('Can\'t get sector size for %s' % location)
-
-    @staticmethod
-    def get_disk_size():
-        # Get the size of a real device
-
-    def load_partition_data(self, part_file):
+            raise ExtensionError('Error reading information from fdisk')
 
     def verifyDevice(self, device): # TODO sector size
         ''' Calculate offsets, sizes, and numbering for each partition
@@ -278,27 +346,6 @@ class simplepartition():
             partition['number'] = part_num
             used_numbers.add(part_num)
 
-            # Boot flag
-            if 'boot' in partition:
-                partition['boot'] = self.parse_boolean(partition['boot'])
-            else:
-                partition['boot'] = False
-
-            # Check for duplicated mountpoints
-            if 'mountpoint' in partition:
-                mountpoint = partition['mountpoint']
-                if mountpoint in seen_mountpoints:
-                    raise ExtensionError('Duplicated mountpoint: %s' %
-                                          mountpoint)
-                if mountpoint == '/' and partition['format'] != 'btrfs':
-                    raise ExtensionError('Root filesystem should be btrfs')
-                seen_mountpoints.add(mountpoint)
-
-        # Check for root mountpoint
-        if not '/' in seen_mountpoints:
-            raise ExtensionError('No root partition specified, '
-                                 'please add a partition with '
-                                 'mountpoint \'/\'')
 
         # Process partition sizes
         start = (partition_data['start_offset'] * 512) / sector_size
@@ -317,9 +364,7 @@ class simplepartition():
             self.status(msg='WARNING: Start sector is not aligned to '
                             '4096 byte sector boundaries')
 
-        disk_size = self.get_disk_size()
-        if not disk_size:
-            raise ExtensionError('DISK_SIZE is not defined')
+
 
         disk_size_sectors = disk_size / sector_size
         if pt_format == 'gpt':
@@ -357,6 +402,7 @@ class simplepartition():
         offset = start
         total_size = 0
         last_sector = 0
+
         for partition in partitions:
             # Process filled partition
             if partition['size'] == 'fill':
@@ -403,7 +449,3 @@ class simplepartition():
         new_partition_data = partition_data
         new_partition_data['partitions'] = new_partitions
         return new_partition_data
-
-    def create_partition_table(self, location, partition_data):
-        ''' Use fdisk to create a partition table '''
-

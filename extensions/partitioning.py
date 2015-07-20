@@ -16,6 +16,20 @@
 
 ''' A write extension to help making partitioned images or devices '''
 
+        print 'Reading partition specification: %s' % part_file
+
+                if mountpoint == '/' and partition['format'] != 'btrfs':
+                    raise ExtensionError('Root filesystem should be btrfs')
+
+        # Check for root mountpoint
+        if not '/' in seen_mountpoints:
+            raise ExtensionError('No root partition specified, '
+                                 'please add a partition with '
+                                 'mountpoint \'/\'')
+
+        disk_size = self.get_disk_size()
+        if not disk_size:
+            raise ExtensionError('DISK_SIZE is not defined')
 
     def do_partitioning(self, location, temp_root, part_file):
         ''' The steps required to create a partitioned device or
