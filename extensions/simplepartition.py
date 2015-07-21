@@ -53,8 +53,8 @@ class Extent(object):
             self.fill = False
 
     def __str__(self):
-        return '<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
-                (self.start, self.end, self.__len__())
+        return ('<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
+                (self.start, self.end, self.__len__()))
 
     def __max__(self):
         return self.end
@@ -67,6 +67,36 @@ class Extent(object):
         Return the length in bytes
         """
         return (self.end - self.start) * sector_size
+
+class PartitionList(object):
+    """
+    An iterable object to contain partitions, and handle partition numbering
+    """
+
+    def __init__():
+        self.__partition_list = []
+
+    def append(self, partition):
+        if isinstance(partition, Partition):
+            self.__partition_list.append(partition)
+        else:
+            raise PartitioningError('PartitionList can contain only Partitions')
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        """ Return the next item in an iteration """
+        if last:
+            raise StopIteration
+
+    def __getitem__(self, i):
+        """ Return ith item in list """
+        return self.__partition_list[i]
+
+    def next(self):
+        """ next() method for Python 2 compatibility """
+        return self.__next__(self)
 
 class Partition(object):
     """
@@ -124,21 +154,60 @@ class Device(object):
 # Creating images?
 
     def __init__(self, location, size, **kwargs):
-        self.parts = []
+        self.parts = PartitionList()
         if 'partition_table_format' not in kwargs:
             self.partition_table_format = 'gpt'
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
 
-        self.__dict__.update(kwargs)
+        self.sector_size = simplepartition.getSectorSize(location)
+
+        # Populate Device attributes from keyword dict
+        self.__dict__.update(**kwargs)
+
+        if self.partition_table_format.lower() == 'gpt':
+            self.max_allowed_partitions = 128
+        else:
+            self.max_allowed_partitions = 4
+
+        # Process Device size
+        start = (self.start_offset * 512) / self.sector_size
+        # Sector quantities in the specification are assumed to be 512 bytes
+        # This converts to the real sector size
+        min_start_bytes = 1024**2
+        if (start * self.sector_size) < min_start_bytes:
+            raise PartitioningError('Start offset should be greater than '
+                                    '%d, for %d byte sectors' %
+                                    (min_start_bytes / self.sector_size,
+                                     self.sector_size))
+        # Check the disk's first partition starts on a 4096 byte boundary
+        # this ensures alignment, and avoiding a reduction in performance
+        # on disks which use a 4096 byte physical sector size
+        if (start * sector_size) % 4096 != 0:
+            print('WARNING: Start sector is not aligned '
+                  'to 4096 byte sector boundaries')
+
+        disk_size_sectors = self.size / self.sector_size
+        if self.partition_table_format == 'gpt':
+            # GPT partition table is duplicated at the end of the device.
+            # GPT header takes one sector, whatever the sector size,
+            # with a 16384 byte 'minimum' area for partition entries,
+            # supporting up to 128 partitions (128 bytes per entry).
+            # The duplicate GPT does not include the 'protective' MBR
+            gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
+            self.extent = Extext(start=start, end=(disk_size_sectors - gpt_size_sectors))
+        else:
+            self.extent = Extent(start=start, end=disk_size_sectors)
+
+
+
+
         self.updatePartitions()
 
         self.location = location
         self.size = getBytes(size) #TODO
 
-        self.extent = Extent(
-
-        self.mountpoints = set()
+        self.__mountpoints = set()
     
     def addPartition(self, **kwargs):
         '''
@@ -148,20 +217,22 @@ class Device(object):
         '''
         partition = Partition(**kwargs)
         if hasattr(partition, 'mountpoint'):
-            if partition.mountpoint in self.mountpoints:
+            if partition.mountpoint in self.__mountpoints:
                 raise PartitioningError('Duplicated mountpoint: %s' %
                                          mountpoint)
-        self.mountpoints.add(partition.mountpoint)
-        self.partitions.append(partition)
+        self.__mountpoints.add(partition.mountpoint)
 
-    def updatePartitions(self, partitions=None)
+        if len(self.parts) < self.max_allowed_partitions:
+            self.partitions.append(partition)
+
+    def updatePartitions(self, partitions=None):
         """
         Populate parts with Partition objects
 
         @param partitions: List of partition attributes
         @type partitions:  list
         """
-        self.parts = []
+        self.parts = PartitionList()
         if partitions:
             self.partitions = partitions
         for partition in self.partitions:
@@ -302,15 +373,6 @@ class simplepartition():
                             for partition in parts
                             if 'number' in partition)
 
-        pt_format = partition_data['partition_table_format']
-        if pt_format == 'gpt':
-            allowed_partitions = 128
-        else:
-            allowed_partitions = 4
-
-        if pt_format not in ('dos', 'mbr', 'gpt'):
-            raise ExtensionError(msg='Unrecognised partition table type')
-
         # Process partition numbering and boot flag
         used_numbers = set()
         seen_mountpoints = set()
@@ -347,36 +409,6 @@ class simplepartition():
             used_numbers.add(part_num)
 
 
-        # Process partition sizes
-        start = (partition_data['start_offset'] * 512) / sector_size
-        # Sector quantities in the specification are assumed to be 512 bytes
-        # This converts to the real sector size
-        min_start_bytes = 1024**2
-        if (start * sector_size) < min_start_bytes:
-            raise ExtensionError('Start offset should be greater than '
-                                 '%d, for %d byte sectors' %
-                                 (min_start_bytes / sector_size,
-                                  sector_size))
-        # Check the disk's first partition starts on a 4096 byte boundary
-        # this ensures alignment, and avoiding a reduction in performance
-        # on disks which use a 4096 byte physical sector size
-        if (start * sector_size) % 4096 != 0:
-            self.status(msg='WARNING: Start sector is not aligned to '
-                            '4096 byte sector boundaries')
-
-
-
-        disk_size_sectors = disk_size / sector_size
-        if pt_format == 'gpt':
-            # GPT partition table is duplicated at the end of the device.
-            # GPT header takes one sector, whatever the sector size,
-            # with a 16384 byte 'minimum' area for partition entries,
-            # supporting up to 128 partitions (128 bytes per entry).
-            # The duplicate GPT does not include the 'protective' MBR
-            gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
-            total_usable_sectors = disk_size_sectors - gpt_size_sectors
-        else:
-            total_usable_sectors = disk_size_sectors
 
         offset = start
         for partition in partitions:

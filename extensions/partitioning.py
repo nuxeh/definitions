@@ -16,6 +16,10 @@
 
 ''' A write extension to help making partitioned images or devices '''
 
+
+        if pt_format not in ('dos', 'mbr', 'gpt'):
+            raise ExtensionError(msg='Unrecognised partition table type')
+
         print 'Reading partition specification: %s' % part_file
 
                 if mountpoint == '/' and partition['format'] != 'btrfs':
