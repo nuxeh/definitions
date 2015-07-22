@@ -41,16 +41,19 @@ class Extent(object):
     with sectors of a given size
     """
 
-    def __init__(self, sector_size=512, start=0, end=0, fill=False):
+    def __init__(self, sector_size=512, start=0, end=0, size=0, fill=False):
         self.sector_size = int(sector_size)
+        self.fill = False
         if fill:
             self.start = 0
             self.end = 0
             self.fill = True
-        else:
+        else if start and end:
             self.start = int(start)
             self.end = int(end)
-            self.fill = False
+        else if start and size:
+            self.start = int(start)
+            start.end = int(start) + int(end)
 
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
@@ -68,19 +71,28 @@ class Extent(object):
         """
         return (self.end - self.start) * sector_size
 
+    def length_sectors(self):
+        """
+        Return the length in sectors
+        """
+        return (self.end - self.start)
+
 class PartitionList(object):
     """
     An iterable object to contain partitions, and handle partition numbering
     """
 
-    def __init__():
+    def __init__(self, extent):
         self.__partition_list = []
+        self.extent = extent
+        self.fill_partition_count = 0
 
     def append(self, partition):
         if isinstance(partition, Partition):
             self.__partition_list.append(partition)
         else:
-            raise PartitioningError('PartitionList can contain only Partitions')
+            raise PartitioningError('PartitionList can only '
+                                    'contain Partitions')
 
     def __iter__(self):
         return self
@@ -151,7 +163,7 @@ class Device(object):
                     object as a dict (see Partition)
     """
 
-# Creating images?
+# fillable device?
 
     def __init__(self, location, size, **kwargs):
         self.parts = PartitionList()
@@ -160,6 +172,7 @@ class Device(object):
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
 
+        # Get sector size
         self.sector_size = simplepartition.getSectorSize(location)
 
         # Populate Device attributes from keyword dict
@@ -183,7 +196,7 @@ class Device(object):
         # Check the disk's first partition starts on a 4096 byte boundary
         # this ensures alignment, and avoiding a reduction in performance
         # on disks which use a 4096 byte physical sector size
-        if (start * sector_size) % 4096 != 0:
+        if (start * self.sector_size) % 4096 != 0:
             print('WARNING: Start sector is not aligned '
                   'to 4096 byte sector boundaries')
 
@@ -194,8 +207,10 @@ class Device(object):
             # with a 16384 byte 'minimum' area for partition entries,
             # supporting up to 128 partitions (128 bytes per entry).
             # The duplicate GPT does not include the 'protective' MBR
-            gpt_size_sectors = (sector_size + (16 * 1024)) / sector_size
-            self.extent = Extext(start=start, end=(disk_size_sectors - gpt_size_sectors))
+            gpt_size = (self.sector_size + (16 * 1024)) / self.sector_size
+            # total usable sectors
+            self.extent = Extext(start=start,
+                                 end=(disk_size_sectors - gpt_size))
         else:
             self.extent = Extent(start=start, end=disk_size_sectors)
 
@@ -207,6 +222,8 @@ class Device(object):
         self.location = location
         self.size = getBytes(size) #TODO
 
+        self.parts = PartitionList()
+
         self.__mountpoints = set()
     
     def addPartition(self, **kwargs):
@@ -216,14 +233,20 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
+        # TODO non-duplicable in PartitionList
         if hasattr(partition, 'mountpoint'):
             if partition.mountpoint in self.__mountpoints:
                 raise PartitioningError('Duplicated mountpoint: %s' %
                                          mountpoint)
         self.__mountpoints.add(partition.mountpoint)
 
+        
+
         if len(self.parts) < self.max_allowed_partitions:
-            self.partitions.append(partition)
+            self.parts.append(partition)
+        else:
+            raise PartitioningError('Cannot add partition: Maximum number of '
+                                    'partitions has been reached')
 
     def updatePartitions(self, partitions=None):
         """
@@ -243,14 +266,10 @@ class Device(object):
         Get the partition object by its mountpoint
         '''
 
-    def verify(self):
-        simplepartition.verify(self)
-
     def commit(self):
         """
         Write the partition table to disk
         """
-        simplepartition.verify(self)
         simplepartition.commit(self)
 
     def __str__(self):
@@ -265,6 +284,8 @@ class PartitioningError(Exception):
     def __str__(self):
         return self.msg
 
+
+# Creating images?
 
 class simplepartition():
 
