@@ -48,10 +48,10 @@ class Extent(object):
             self.start = 0
             self.end = 0
             self.fill = True
-        else if start and end:
+        elif start and end:
             self.start = int(start)
             self.end = int(end)
-        else if start and size:
+        elif start and size:
             self.start = int(start)
             start.end = int(start) + int(end)
 
@@ -82,6 +82,8 @@ class PartitionList(object):
     An iterable object to contain partitions, and handle partition numbering
     """
 
+    # Recalculate before any /access/
+    
     def __init__(self, extent):
         self.__partition_list = []
         self.extent = extent
@@ -166,14 +168,14 @@ class Device(object):
 # fillable device?
 
     def __init__(self, location, size, **kwargs):
-        self.parts = PartitionList()
+
         if 'partition_table_format' not in kwargs:
             self.partition_table_format = 'gpt'
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
 
         # Get sector size
-        self.sector_size = simplepartition.getSectorSize(location)
+        self.sector_size = self.getSectorSize(location)
 
         # Populate Device attributes from keyword dict
         self.__dict__.update(**kwargs)
@@ -214,6 +216,7 @@ class Device(object):
         else:
             self.extent = Extent(start=start, end=disk_size_sectors)
 
+        self.parts = PartitionList(self.extent)
 
 
 
@@ -225,7 +228,22 @@ class Device(object):
         self.parts = PartitionList()
 
         self.__mountpoints = set()
-    
+
+
+    def updatePartitions(self, partitions=None):
+        """
+        Populate parts with Partition objects
+
+        @param partitions: List of partition attributes
+        @type partitions:  list
+        """
+        self.parts = PartitionList()
+        if partitions:
+            self.partitions = partitions
+        for partition in self.partitions:
+            self.addPartition(partition)
+
+
     def addPartition(self, **kwargs):
         '''
         Add a partition by dict of attributes
@@ -248,69 +266,16 @@ class Device(object):
             raise PartitioningError('Cannot add partition: Maximum number of '
                                     'partitions has been reached')
 
-    def updatePartitions(self, partitions=None):
-        """
-        Populate parts with Partition objects
-
-        @param partitions: List of partition attributes
-        @type partitions:  list
-        """
-        self.parts = PartitionList()
-        if partitions:
-            self.partitions = partitions
-        for partition in self.partitions:
-            self.addPartition(partition)
 
     def getPartitionByMountpoint(self, mountpoint):
         '''
         Get the partition object by its mountpoint
         '''
 
+    @staticmethod
     def commit(self):
         """
         Write the partition table to disk
-        """
-        simplepartition.commit(self)
-
-    def __str__(self):
-        return 'Device: location=%s, size=%s' % (self.location, self.size)
-
-
-class PartitioningError(Exception):
-
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-# Creating images?
-
-class simplepartition():
-
-    def loadYAML(yamlFile):
-        '''
-        Load partition data from a yaml specification
-
-        The YAML file describes the attributes documented in the PartitionInfo
-        and Partition classes. A simple example might be:
-
-        @param yaml_file: Path to a YAML file to load
-        @type yaml_file:  str
-
-        @return Device
-        @rtype Device
-            
-        '''
-        with open(yamlFile, 'r') as f:
-            kwargs = yaml.safe_load(f)
-        return Device(location, size, **kwargs)
-    
-    @staticmethod
-    def commitDevice(device):
-        """
-        Write the partition table to device
 
         @param device: A device object to perform the partitioning on
         @type device:  Device
@@ -359,6 +324,31 @@ class simplepartition():
                              stdout=subprocess.PIPE)
         p.communicate(cmd)
 
+    def __str__(self):
+        return 'Device: location=%s, size=%s' % (self.location, self.size)
+
+
+# Creating images?
+
+    def loadYAML(yamlFile):
+        '''
+        Load partition data from a yaml specification
+
+        The YAML file describes the attributes documented in the PartitionInfo
+        and Partition classes. A simple example might be:
+
+        @param yaml_file: Path to a YAML file to load
+        @type yaml_file:  str
+
+        @return Device
+        @rtype Device
+            
+        '''
+        with open(yamlFile, 'r') as f:
+            kwargs = yaml.safe_load(f)
+        return Device(location, size, **kwargs)
+    
+
     def getSectorSize(self, location):
         """
         Get the logical sector size of a device or image, in bytes
@@ -372,6 +362,7 @@ class simplepartition():
         """
         return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
                                                 location))
+
 
     def __filterFdiskListOutput(self, regex, location):
         r = re.compile(regex, re.DOTALL)
@@ -502,3 +493,14 @@ class simplepartition():
         new_partition_data = partition_data
         new_partition_data['partitions'] = new_partitions
         return new_partition_data
+
+
+class PartitioningError(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
