@@ -38,39 +38,21 @@ import yaml
 class Extent(object):
     """
     A class to hold start and end points for other objects (Devices, Partitions)
-    with sectors of a given size
+
+    Start and end points are measured in sectors.
     """
 
-    def __init__(self, sector_size=512, start=0,
-                       size_bytes=0, size_sectors=0, end=0, fill=False):
+    def __init__(self, start=0, length=0, end=0):
 
-        self.sector_size = int(sector_size)
-        self.fill = False
-        if fill:
-            self.start = 0
-            self.end = 0
-            self.fill = True
-        elif start and end:
+        if start and end:
             self.start = int(start)
             self.end = int(end)
-            self.size = self.end - self.start + 1
-        elif start and size_sectors:
+        elif start and length:
             self.start = int(start)
-            self.end = int(start) + int(size_sectors) - 1
-        elif start and size_bytes:
-            # Calculate sector size, aligned to 4096 byte boundaries
-            size_sectors = (int(size_bytes) / self.sector_size +
-                           ((int(size_bytes) % 4096) != 0) *
-                           (4096 / self.sector_size))
-            self.start = int(start)
-            self.end = int(start) + size_sectors - 1
+            self.end = int(start) + int(length) - 1
         else:
-            raise PartitioningError('Extent requires either start and size, '
-                                    'start and end, or fill=True')
-
-    def __str__(self):
-        return ('<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
-                (self.start, self.end, self.__len__(), self.fill))
+            raise PartitioningError('Extent requires either start point and '
+                                    'size, or start and end points')
 
     def __max__(self):
         return self.end
@@ -80,15 +62,14 @@ class Extent(object):
 
     def __len__(self):
         """
-        Return the length in sectors
+        Return the length in sectors (inclusive of the start and end sectors)
         """
-        return self.size
+        return self.end - self.start + 1
 
-    def size_bytes(self):
-        """
-        Return the length in bytes
-        """
-        return self.size * self.sector_size
+    def __str__(self):
+        return ('<Extent: Start=%d, End=%d, Length=%d>' %
+                (self.start, self.end, self.__len__()))
+
 
 class PartitionList(object):
     """
@@ -99,6 +80,13 @@ class PartitionList(object):
     """
 
     # Recalculate before any /access/
+
+            # Calculate sector size, aligned to 4096 byte boundaries
+            #size_sectors = (int(size_bytes) / self.sector_size +
+            #               ((int(size_bytes) % 4096) != 0) *
+            #               (4096 / self.sector_size))
+            #self.start = int(start)
+            #self.end = int(start) + size_sectors - 1
     
     def __init__(self, extent):
         self.__partition_list = []
