@@ -41,7 +41,8 @@ class Extent(object):
     with sectors of a given size
     """
 
-    def __init__(self, sector_size=512, start=0, end=0, size=0, fill=False):
+    def __init__(self, sector_size=512, start=0,
+                       size_bytes=0, size_sectors=0, end=0, fill=False):
         self.sector_size = int(sector_size)
         self.fill = False
         if fill:
@@ -51,13 +52,23 @@ class Extent(object):
         elif start and end:
             self.start = int(start)
             self.end = int(end)
-        elif start and size:
+        elif start and size_sectors:
             self.start = int(start)
-            start.end = int(start) + int(end)
+            self.end = int(start) + int(size) - 1
+        elif start and size_bytes:
+            self.start = int(start)
+            self.end = 
+                # Calculate sector size, aligned to 4096 byte boundaries
+                size_sectors = (size_bytes / sector_size +
+                               ((size_bytes % 4096) != 0) *
+                               (4096 / sector_size))
+        else:
+            raise PartitioningError('Extent requires either start and size, '
+                                    'start and end, or fill=True')
 
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length(bytes)=%d, Fill=%s>' %
-                (self.start, self.end, self.__len__()))
+                (self.start, self.end, self.__len__(), self.fill))
 
     def __max__(self):
         return self.end
@@ -67,19 +78,22 @@ class Extent(object):
 
     def __len__(self):
         """
-        Return the length in bytes
-        """
-        return (self.end - self.start) * sector_size
-
-    def length_sectors(self):
-        """
         Return the length in sectors
         """
-        return (self.end - self.start)
+        return (self.end - self.start) + 1
+
+    def size_bytes(self):
+        """
+        Return the length in bytes
+        """
+        return (self.end - self.start) * self.sector_size
 
 class PartitionList(object):
     """
     An iterable object to contain partitions, and handle partition numbering
+
+    The PartitionList recalculates the geometry for each partition in the list
+    when accessed, or updated
     """
 
     # Recalculate before any /access/
@@ -106,11 +120,33 @@ class PartitionList(object):
 
     def __getitem__(self, i):
         """ Return ith item in list """
+        self.__update_extents(self)
         return self.__partition_list[i]
+
+    def __setitem__(self, i, value):
+        """ Update the ith item in the list """
+        self.append(partition) 
+        self.__update_extents(self)
 
     def next(self):
         """ next() method for Python 2 compatibility """
         return self.__next__(self)
+
+    def free_space(self):
+        """
+        Calculate the amount of unused space left by the partitions currently
+        in the list
+        """
+        offset = self.extent.start
+        for part in self.__partition_list:
+            offset += len(part.extent)
+        return len(self.extent) - offset
+
+
+    def __update_extents(self):
+        self.free_space()
+        for part in self.__partition_list:
+
 
 class Partition(object):
     """
@@ -428,9 +464,9 @@ class Device(object):
                 size_bytes = self._parse_size(str(partition['size']))
 
                 # Calculate sector size, aligned to 4096 byte boundaries
-                size_sectors = (size_bytes / sector_size +
-                               ((size_bytes % 4096) != 0) *
-                               (4096 / sector_size))
+#               size_sectors = (size_bytes / sector_size +
+#                              ((size_bytes % 4096) != 0) *
+#                              (4096 / sector_size))
 
                 offset += size_sectors
                 partition['size_sectors'] = size_sectors
