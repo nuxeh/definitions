@@ -43,6 +43,7 @@ class Extent(object):
 
     def __init__(self, sector_size=512, start=0,
                        size_bytes=0, size_sectors=0, end=0, fill=False):
+
         self.sector_size = int(sector_size)
         self.fill = False
         if fill:
@@ -52,16 +53,17 @@ class Extent(object):
         elif start and end:
             self.start = int(start)
             self.end = int(end)
+            self.size = self.end - self.start + 1
         elif start and size_sectors:
             self.start = int(start)
-            self.end = int(start) + int(size) - 1
+            self.end = int(start) + int(size_sectors) - 1
         elif start and size_bytes:
+            # Calculate sector size, aligned to 4096 byte boundaries
+            size_sectors = (int(size_bytes) / self.sector_size +
+                           ((int(size_bytes) % 4096) != 0) *
+                           (4096 / self.sector_size))
             self.start = int(start)
-            self.end = 
-                # Calculate sector size, aligned to 4096 byte boundaries
-                size_sectors = (size_bytes / sector_size +
-                               ((size_bytes % 4096) != 0) *
-                               (4096 / sector_size))
+            self.end = int(start) + size_sectors - 1
         else:
             raise PartitioningError('Extent requires either start and size, '
                                     'start and end, or fill=True')
@@ -80,13 +82,13 @@ class Extent(object):
         """
         Return the length in sectors
         """
-        return (self.end - self.start) + 1
+        return self.size
 
     def size_bytes(self):
         """
         Return the length in bytes
         """
-        return (self.end - self.start) * self.sector_size
+        return self.size * self.sector_size
 
 class PartitionList(object):
     """
@@ -100,6 +102,7 @@ class PartitionList(object):
     
     def __init__(self, extent):
         self.__partition_list = []
+        self.__iter_index = 0
         self.extent = extent
         self.fill_partition_count = 0
 
@@ -109,6 +112,9 @@ class PartitionList(object):
         else:
             raise PartitioningError('PartitionList can only '
                                     'contain Partitions')
+
+    def __str__(self):
+        pass
 
     def __iter__(self):
         return self
@@ -142,11 +148,13 @@ class PartitionList(object):
             offset += len(part.extent)
         return len(self.extent) - offset
 
-
     def __update_extents(self):
-        self.free_space()
+        #self.free_space()
+        offset = self.extent.start
         for part in self.__partition_list:
-
+            if part.size != 'fill':
+                part.extent = Extent(start=offset, size_bytes=part.size)
+                offset = part.extent.end + 1
 
 class Partition(object):
     """
@@ -157,12 +165,12 @@ class Partition(object):
     Required attributes:
         size: String describing the size of the partition in bytes (TODO human readable?).
               This may also be 'fill' to expand this partition to fill used space (TODO: normalise)
-        format: A string describing the filesystem format for the
-                partition, or 'none' to skip filesystem creation
         fdisk_type: A number describing the hexadecimal code used by fdisk
                     to describe the partition type (TODO: string + validate)
 
     Optional attributes:
+        format: A string describing the filesystem format for the
+                partition, or 'none' to skip filesystem creation
         description: A string describing the partition
         boot: Boolean describing whether the bootable flag should be set
         mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
@@ -171,8 +179,18 @@ class Partition(object):
         TODO: label
     """
 
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+    def __init__(self, size=0, fdisk_type=0x81, **kwargs):
+        # TODO fill
+        if not size and 'size' not in kwargs:
+            raise PartitioningError('Partition must have a non-zero size')
+        self.__dict__.update(**kwargs)
+        self.fdisk_type = fdisk_type
+        self.size = size
+
+    def __str__(self):
+        return ('Partition\n'
+                'size: %s\n'
+                'fdisk type: %s' % (self.size, self.fdisk_type))
 
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
