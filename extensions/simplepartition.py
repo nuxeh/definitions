@@ -41,15 +41,16 @@ class Extent(object):
 
     Start and end points are measured in sectors. This class transparently
     handles the inclusive nature of the start and end sectors of blocks of
-    storage.
+    storage. A null case provides the possibility of a zero-length Extent.
     """
 
     def __init__(self, start=0, length=0, end=0):
-        if start > end:
+        if length:
+            if not start:
+                raise PartitioningError('Extent requires a non-zero start '
+                                        'point and length')
+        elif start > end:
             raise PartitioningError('Extent start must be before end')
-        if length and not start:
-            raise PartitioningError('Extent requires a non-zero start '
-                                    'point and length')
 
         if start and length:
             self.start = int(start)
@@ -58,6 +59,10 @@ class Extent(object):
             self.start = int(start)
             self.end = int(end)
 
+        self.null = False
+        if not (self.start and self.end):
+            self.null = True
+
     def __max__(self):
         return self.end
 
@@ -65,17 +70,26 @@ class Extent(object):
         return self.start
 
     def __len__(self):
-        """
-        Return the length in sectors (inclusive of the start and end sectors)
-        """
-        return self.end - self.start + 1
+        """Return the length in sectors"""
+        if self.null:
+            return 0
+        else:
+            return self.end - self.start + 1
 
     def __add__(self, other):
-        return Extent(start=self.start, length=(len(self) + len(other)))
+        """Return the sum of two extents"""
+        if self.null:
+            return other
+        else:
+            return Extent(start=self.start, length=(len(self) + len(other)))
 
     def __iadd__(self, other):
-        self.end += len(other)
-        return self
+        """+="""
+        if self.null:
+            return other
+        else:
+            self.end += len(other)
+            return self
 
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length=%d>' %
@@ -84,10 +98,14 @@ class Extent(object):
 
 class PartitionList(object):
     """
-    An iterable object to contain partitions, and handle partition numbering
+    An iterable object to contain partitions, and process data about them 
 
     The PartitionList recalculates the geometry for each partition in the list
-    when accessed, or updated
+    when accessed, so returned partitions have up-to-date geometry and numbering.
+
+    This class eases the calculation of partition sizes and numbering, as for
+    numbering, and Partitions with a 'fill' size, the result depends on each
+    of the other partitions in the list.
     """
 
     # Recalculate before any /access/
@@ -99,29 +117,43 @@ class PartitionList(object):
             #self.start = int(start)
             #self.end = int(start) + size_sectors - 1
     
-    def __init__(self, extent):
+    def __init__(self, device):
+        """
+        Initialisation function
+
+        @param device: A Device object
+        @type device:  Device
+        """
+        self.device = device
+        self.extent = device.extent
+        self.sector_size = device.sector_size
+        
         self.__partition_list = []
         self.__iter_index = 0
-        self.extent = extent
-        self.fill_partition_count = 0
+        
+        self.__fill_partition_count = 0
+        self.__unused_space = 0
 
     def append(self, partition):
         if isinstance(partition, Partition):
             self.__partition_list.append(partition)
         else:
             raise PartitioningError('PartitionList can only '
-                                    'contain Partitions')
-
-    def __str__(self):
-        pass
+                                    'contain Partition objects')
 
     def __iter__(self):
+        """Return an iterable object"""
+        self.__iter_index = 0
         return self
 
     def __next__(self):
-        """ Return the next item in an iteration """
+        """Return the next item in an iteration"""
         if last:
             raise StopIteration
+
+    def next(self):
+        """next() method for Python 2 compatibility"""
+        return self.__next__(self)
 
     def __getitem__(self, i):
         """ Return ith item in list """
@@ -133,16 +165,12 @@ class PartitionList(object):
         self.append(partition) 
         self.__update_extents(self)
 
-    def next(self):
-        """ next() method for Python 2 compatibility """
-        return self.__next__(self)
-
     def free_space(self):
         """
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        offset = self.extent.start
+        extent = Extent()
         for part in self.__partition_list:
             offset += len(part.extent)
         return len(self.extent) - offset
@@ -154,6 +182,10 @@ class PartitionList(object):
             if part.size != 'fill':
                 part.extent = Extent(start=offset, size_bytes=part.size)
                 offset = part.extent.end + 1
+
+    def __str__(self):
+        pass
+
 
 class Partition(object):
     """
@@ -191,6 +223,15 @@ class Partition(object):
                 'size: %s\n'
                 'fdisk type: %s' % (self.size, self.fdisk_type))
 
+    def compare(self, other):
+        """Check for mutually exclusive attributes"""
+        non_duplicable = ['number', 'mountpoint']
+        for attrib in non_duplicable:
+            if hasattr(self, attrib) and hasattr(other, attrib):
+                if self.attrib == other.attrib:
+                    raise PartitioningError('Duplicated partition %s '
+                                            'attribute' % attrib)
+
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
 class Device(object):
@@ -198,7 +239,7 @@ class Device(object):
     A class to describe a disk or image, and the partition layout
     used inside it
 
-    The required attributes are loaded from a dict, containing key-value
+    Attributes are loaded from , containing key-value
     pairs describing the required attributes. This may be loaded
     from a YAML specification using the module function loadYAML().
 
@@ -229,6 +270,7 @@ class Device(object):
 
         # Get sector size
         self.sector_size = self.getSectorSize(location)
+        self.location = location
 
         # Populate Device attributes from keyword dict
         self.__dict__.update(**kwargs)
@@ -275,7 +317,6 @@ class Device(object):
 
         self.updatePartitions()
 
-        self.location = location
         self.size = getBytes(size) #TODO
 
         self.parts = PartitionList()
@@ -304,11 +345,6 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
-        # TODO non-duplicable in PartitionList
-        if hasattr(partition, 'mountpoint'):
-            if partition.mountpoint in self.__mountpoints:
-                raise PartitioningError('Duplicated mountpoint: %s' %
-                                         mountpoint)
         self.__mountpoints.add(partition.mountpoint)
 
         
