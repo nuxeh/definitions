@@ -45,18 +45,18 @@ class Extent(object):
     """
 
     def __init__(self, start=0, length=0, end=0):
-        if start and end:
-            if start > end:
-                raise PartitioningError('Extent start must be before end')
-            self.start = int(start)
-            self.end = int(end)
-        elif start and length:
+        if start > end:
+            raise PartitioningError('Extent start must be before end')
+        if length and not start:
+            raise PartitioningError('Extent requires a non-zero start '
+                                    'point and length')
+
+        if start and length:
             self.start = int(start)
             self.end = int(start) + int(length) - 1
-#       else:
-#           raise PartitioningError('Extent requires either non-zero start '
-#                                   'point and size, or start and end points')
-# TODO Null case
+        else:
+            self.start = int(start)
+            self.end = int(end)
 
     def __max__(self):
         return self.end
@@ -70,10 +70,6 @@ class Extent(object):
         """
         return self.end - self.start + 1
 
-    def __str__(self):
-        return ('<Extent: Start=%d, End=%d, Length=%d>' %
-                (self.start, self.end, len(self)))
-
     def __add__(self, other):
         return Extent(start=self.start, length=(len(self) + len(other)))
 
@@ -81,6 +77,9 @@ class Extent(object):
         self.end += len(other)
         return self
 
+    def __str__(self):
+        return ('<Extent: Start=%d, End=%d, Length=%d>' %
+                (self.start, self.end, len(self)))
 
 
 class PartitionList(object):
