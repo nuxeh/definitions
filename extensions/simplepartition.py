@@ -37,22 +37,26 @@ import yaml
 
 class Extent(object):
     """
-    A class to hold start and end points for other objects (Devices, Partitions)
+    A class to hold start and end points for other objects
 
-    Start and end points are measured in sectors.
+    Start and end points are measured in sectors. This class transparently
+    handles the inclusive nature of the start and end sectors of blocks of
+    storage.
     """
 
     def __init__(self, start=0, length=0, end=0):
-
         if start and end:
+            if start > end:
+                raise PartitioningError('Extent start must be before end')
             self.start = int(start)
             self.end = int(end)
         elif start and length:
             self.start = int(start)
             self.end = int(start) + int(length) - 1
-        else:
-            raise PartitioningError('Extent requires either start point and '
-                                    'size, or start and end points')
+#       else:
+#           raise PartitioningError('Extent requires either non-zero start '
+#                                   'point and size, or start and end points')
+# TODO Null case
 
     def __max__(self):
         return self.end
@@ -68,7 +72,15 @@ class Extent(object):
 
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length=%d>' %
-                (self.start, self.end, self.__len__()))
+                (self.start, self.end, len(self)))
+
+    def __add__(self, other):
+        return Extent(start=self.start, length=(len(self) + len(other)))
+
+    def __iadd__(self, other):
+        self.end += len(other)
+        return self
+
 
 
 class PartitionList(object):
