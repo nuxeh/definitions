@@ -122,7 +122,7 @@ class Extent(object):
 
 class PartitionList(object):
     """
-    An iterable object to contain partitions, and process data about them 
+    An iterable object to contain partitions, and process data about them
 
     The PartitionList recalculates the geometry for each partition in the list
     when accessed, so returned partitions have up-to-date geometry and numbering.
@@ -144,10 +144,10 @@ class PartitionList(object):
         self.device = device
         self.extent = device.extent
         self.sector_size = device.sector_size
-        
+
         self.__partition_list = []
         self.__iter_index = 0
-        
+
         self.__fill_partition_count = 0
         self.__unused_space = 0
 
@@ -199,8 +199,8 @@ class PartitionList(object):
         for part in self.__partition_list:
             self.__extents.append(Extent(start
         self.__unused_space = self.free_space(self)
-        
-        
+
+
 
     def get_length_sectors(self, size_bytes):
         """Get a length in sectors, aligned to 4096 byte boundaries"""
@@ -231,7 +231,7 @@ class PartitionList(object):
 
     def __setitem__(self, i, value):
         """ Update the ith item in the list """
-        self.append(partition) 
+        self.append(partition)
         self.__update_extents(self)
 
 
@@ -397,7 +397,7 @@ class Device(object):
         partition = Partition(**kwargs)
         self.__mountpoints.add(partition.mountpoint)
 
-        
+
 
         if len(self.parts) < self.max_allowed_partitions:
             self.parts.append(partition)
@@ -481,12 +481,12 @@ class Device(object):
 
         @return Device
         @rtype Device
-            
+
         '''
         with open(yamlFile, 'r') as f:
             kwargs = yaml.safe_load(f)
         return Device(location, size, **kwargs)
-    
+
 
     def getSectorSize(self, location):
         """
