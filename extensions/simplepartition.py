@@ -33,6 +33,7 @@ Requires fdisk <versions>
 
 import subprocess
 import yaml
+from copy import deepcopy
 # staticmethod
 
 class Extent(object):
@@ -81,15 +82,38 @@ class Extent(object):
         if self.null:
             return other
         else:
-            return Extent(start=self.start, length=(len(self) + len(other)))
+            return Extent(start=self.start,
+                          length=(len(self) + len(other)))
 
     def __iadd__(self, other):
         """+="""
         if self.null:
-            return other
+            return other # TODO: necessary?
         else:
             self.end += len(other)
             return self
+
+    def __sub__(self, other):
+        if self > other:
+            return Extent()
+        if self.null:
+            return self
+        else:
+            return Extent(start=self.start,
+                          length=(len(self) - len(other)))
+
+    def __isub__(self, other):
+        if self > other:
+            return Extent() # TODO: necessary?
+        if not self.null:
+            self.end -= len(other)
+            return self
+
+    def __gt__(self, other):
+        return len(self) > len(other)
+
+    def __lt__(self, other):
+        return not self > other
 
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length=%d>' %
@@ -110,13 +134,6 @@ class PartitionList(object):
 
     # Recalculate before any /access/
 
-            # Calculate sector size, aligned to 4096 byte boundaries
-            #size_sectors = (int(size_bytes) / self.sector_size +
-            #               ((int(size_bytes) % 4096) != 0) *
-            #               (4096 / self.sector_size))
-            #self.start = int(start)
-            #self.end = int(start) + size_sectors - 1
-    
     def __init__(self, device):
         """
         Initialisation function
@@ -134,8 +151,15 @@ class PartitionList(object):
         self.__fill_partition_count = 0
         self.__unused_space = 0
 
+        self.__extents = []
+        self.__numbers = []
+
     def append(self, partition):
         if isinstance(partition, Partition):
+            for part in self:
+                if part.compare(partition):
+                    raise PartitioningError('Duplicated partition %s '
+                                            'attribute' % attrib)
             self.__partition_list.append(partition)
         else:
             raise PartitioningError('PartitionList can only '
@@ -148,6 +172,9 @@ class PartitionList(object):
 
     def __next__(self):
         """Return the next item in an iteration"""
+        orig = self[self.__iter_index]
+        #TODO: __getitem__
+
         if last:
             raise StopIteration
 
@@ -156,24 +183,34 @@ class PartitionList(object):
         return self.__next__(self)
 
     def __getitem__(self, i):
-        """ Return ith item in list """
-        self.__update_extents(self)
-        return self.__partition_list[i]
+        """ Return an updated copy of the ith item in list """
+        self.__update_numbering_and_extents(self)
+        new = copy.deepcopy(__partition_list[i])
+        new.extent = __extents[i]
+        new.number = __numbers[i]
+        return new
 
-    def __setitem__(self, i, value):
-        """ Update the ith item in the list """
-        self.append(partition) 
-        self.__update_extents(self)
+        #new.number = self.__get_next_number(self, new)
+
+    def __update_numbering_and_extents(self):
+        pass #for
+        
+
+    def get_length_sectors(self, size_bytes):
+        """Get a length in sectors, aligned to 4096 byte boundaries"""
+        return (int(size_bytes) / self.sector_size +
+               ((int(size_bytes) % 4096) != 0) *
+               (4096 / self.sector_size))
 
     def free_space(self):
         """
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        extent = Extent()
-        for part in self.__partition_list:
-            offset += len(part.extent)
-        return len(self.extent) - offset
+        extent_total = Extent()
+        for extent in self.__extents:
+            extent_total += extent
+        return len(self.extent - extent_total)
 
     def __update_extents(self):
         #self.free_space()
@@ -185,6 +222,11 @@ class PartitionList(object):
 
     def __str__(self):
         pass
+
+    def __setitem__(self, i, value):
+        """ Update the ith item in the list """
+        self.append(partition) 
+        self.__update_extents(self)
 
 
 class Partition(object):
@@ -229,8 +271,11 @@ class Partition(object):
         for attrib in non_duplicable:
             if hasattr(self, attrib) and hasattr(other, attrib):
                 if self.attrib == other.attrib:
-                    raise PartitioningError('Duplicated partition %s '
-                                            'attribute' % attrib)
+                    return True
+        return False
+
+
+
 
 # subclass / override baserock specific things, i.e. filesystem creation, dd
 
@@ -321,7 +366,6 @@ class Device(object):
 
         self.parts = PartitionList()
 
-        self.__mountpoints = set()
 
 
     def updatePartitions(self, partitions=None):
