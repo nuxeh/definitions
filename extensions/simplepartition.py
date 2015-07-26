@@ -193,7 +193,13 @@ class PartitionList(object):
         #new.number = self.__get_next_number(self, new)
 
     def __update_numbering_and_extents(self):
-        pass #for
+        self.__extents = []
+        self.__fill_partition_count = 0
+        ext_total = Extent()
+        for part in self.__partition_list:
+            self.__extents.append(Extent(start
+        self.__unused_space = self.free_space(self)
+        
         
 
     def get_length_sectors(self, size_bytes):
