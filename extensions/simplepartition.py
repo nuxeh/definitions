@@ -50,19 +50,12 @@ class Extent(object):
             if not start:
                 raise PartitioningError('Extent requires a non-zero start '
                                         'point and length')
-        elif start > end:
-            raise PartitioningError('Extent start must be before end')
-
         if start and length:
             self.start = int(start)
             self.end = int(start) + int(length) - 1
         else:
             self.start = int(start)
             self.end = int(end)
-
-        self.null = False
-        if not (self.start and self.end):
-            self.null = True
 
     def __max__(self):
         return self.end
@@ -72,42 +65,29 @@ class Extent(object):
 
     def __len__(self):
         """Return the length in sectors"""
-        if self.null:
-            return 0
-        else:
-            return self.end - self.start + 1
+        return self.end - self.start + 1
 
     def __add__(self, other):
         """Return the sum of two extents"""
-        if self.null:
-            return other
-        else:
-            return Extent(start=self.start,
-                          length=(len(self) + len(other)))
+        return Extent(start=self.start,
+                      length=(len(self) + len(other)))
 
     def __iadd__(self, other):
         """+="""
-        if self.null:
-            return other # TODO: necessary?
-        else:
-            self.end += len(other)
-            return self
+        self.end += len(other)
+        return self
 
     def __sub__(self, other):
-        if self > other:
-            return Extent()
-        if self.null:
-            return self
-        else:
-            return Extent(start=self.start,
-                          length=(len(self) - len(other)))
+        if other > self:
+            raise PartitioningError('subtrahend is greater than minuend')
+        return Extent(start=self.start,
+                      length=(len(self) - len(other)))
 
     def __isub__(self, other):
-        if self > other:
+        if other > self:
             return Extent() # TODO: necessary?
-        if not self.null:
-            self.end -= len(other)
-            return self
+        self.end -= len(other)
+        return self
 
     def __gt__(self, other):
         return len(self) > len(other)
@@ -118,6 +98,10 @@ class Extent(object):
     def __str__(self):
         return ('<Extent: Start=%d, End=%d, Length=%d>' %
                 (self.start, self.end, len(self)))
+
+    def clone(self):
+        """Return a copy of the instance of Extent"""
+        return Extent(sel.)
 
 
 class PartitionList(object):
@@ -196,8 +180,8 @@ class PartitionList(object):
         self.__extents = []
         self.__fill_partition_count = 0
         ext_total = Extent()
-        for part in self.__partition_list:
-            self.__extents.append(Extent(start
+#        for part in self.__partition_list:
+#            self.__extents.append(Extent(start
         self.__unused_space = self.free_space(self)
 
 
