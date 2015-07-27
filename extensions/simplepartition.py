@@ -114,12 +114,6 @@ class Extent(object):
         self.filled_space += length_other
         return Extent(start=first_free_sector, length=length_other)
 
-    def clone(self):
-        """Return a copy of the instance of Extent"""
-        new = Extent(start=self.start, end=self.end)
-        new.filled_space = self.filled_space
-        return new
-
     def free_space(self):
         return len(self) - self.filled_space
 
