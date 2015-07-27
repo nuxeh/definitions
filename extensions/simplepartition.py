@@ -31,9 +31,10 @@ Requires fdisk <versions>
 
 """
 
+from copy import deepcopy
+import re
 import subprocess
 import yaml
-from copy import deepcopy
 # staticmethod
 
 class Extent(object):
@@ -114,19 +115,20 @@ class Extent(object):
         return Extent(start=first_free_sector, length=length_other)
 
     def free_space(self):
+        print len(self)
+        print self.filled_space
         return len(self) - self.filled_space
 
 
 class PartitionList(object):
     """
-    An iterable object to contain partitions, and process data about them
+    An iterable object used to contain partitions, and process data about them
 
-    The PartitionList recalculates the geometry for each partition in the list
-    when accessed, so returned partitions have up-to-date geometry and numbering.
-
-    This class eases the calculation of partition sizes and numbering, as for
-    numbering, and Partitions with a 'fill' size, the result depends on each
-    of the other partitions in the list.
+    The PartitionList calculates the geometry for each partition in the list,
+    when accessed, so returned partitions have up-to-date geometry and
+    numbering. This class eases the calculation of partition sizes and
+    numbering, as for numbering, and Partitions with a 'fill' size, the result
+    depends on each of the other partitions in the list.
     """
 
     # Recalculate before any /access/
@@ -139,8 +141,8 @@ class PartitionList(object):
         @type device:  Device
         """
         self.device = device
-        self.extent = device.extent
-        self.allowed_partitions = device.allowed_partitions
+        self.extent = device.extent # TODO: just store device
+        self.max_allowed_partitions = device.max_allowed_partitions
         self.sector_size = device.sector_size
 
         self.__partition_list = []
@@ -164,76 +166,83 @@ class PartitionList(object):
 
     def __next__(self):
         """Return the next item in an iteration"""
-        orig = self[self.__iter_index]
-        #TODO: __getitem__
-
-        if last:
+        partition = self[self.__iter_index]
+        self.__iter_index += 1
+        if self.__iter_index > len(self):
             raise StopIteration
-
+        else:
+            return partition
+        
     def next(self):
         """next() method for Python 2 compatibility"""
-        return self.__next__(self)
-
-    def 
+        return self.__next__()
 
     def __getitem__(self, i):
-        """ Return an updated copy of the ith item in the partition list """
-        part_list = copy.deepcopy(__partition_list)
+        """Return an updated copy of the partition list"""
+        part_list = self.__update_partition_list() # TODO: self probably not needed
+        return part_list[i]
+
+    def free_space(self):
+        """
+        Calculate the amount of unused space left by the partitions currently
+        in the list
+        """
+        part_list = self.__update_partition_list(self)
+        self.extent.filled_space = 0
+        for part in part_list:
+            self.extent.pack(part.extent)
+        return self.extent.free_space()
+
+    def __update_partition_list(self):
+        """
+        Return an updated copy of the partition list
+        
+        This includes allocating an extent and numbering for the returned
+        partition object. A copy of the partition list is made so that the
+        returned partition object is a copy of the stored Partition object
+        rather than a reference to it, thus leaving the partitions stored
+        in the list intact if modified after return.
+        """
+        part_list = deepcopy(self.__partition_list)
 
         fill_partitions = set(partition for partition in part_list
                               if partition.size == 'fill')
-
-        self.extent.filled_space = 0
-        for part in part_list:
-            if part.size != 'fill'
-                extent = Extent(start=1,
-                                length=self.get_length_sectors(part.size))
-                self.extent.pack(extent)
-        fill_size = self.extent.free_space() / len(fill_partitions)
-
-        for part in fill_partitions:
-            part.size = fill_size
-
-        self.extent.filled_space = 0
-        for part in part_list:
-            extent = Extent(start=1,length=self.get_length_sectors(part.size))
-            part.extent = self.extent.pack(extent)
 
         used_numbers = set()
         requested_numbers = set(partition.number for partition in part_list
                                 if hasattr('number', partition))
 
-        # Find the next unused partition number
-        for n in range(1, self.allowed_partitions + 1):
-            if n not in used_numbers and n not in requested_numbers:
-                part_num = n
-                break
+        # Get free space and the size of 'fill' partitions
+        self.extent.filled_space = 0
+        for part in part_list:
+            if part.size != 'fill':
+                extent = Extent(start=1,
+                                length=self.get_length_sectors(part.size))
+                self.extent.pack(extent)
+        fill_size = self.extent.free_space() / len(fill_partitions)
 
-            elif n == self.allowed_partitions: # TODO split out
-                raise ExtensionError('A maximum of %d partitions is '
-                                     'supported for %s partition '
-                                     'tables' %
-                                     (allowed_partitions, pt_format))
+        # Set size of fill partitions
+        for part in fill_partitions:
+            part.size = fill_size
 
+        # Allocate aligned Extents and partition numbers
+        self.extent.filled_space = 0
+        for part in part_list:
+            extent = Extent(start=1,length=self.get_length_sectors(part.size))
+            part.extent = self.extent.pack(extent)
+
+            # Find the next unused partition number if not assigned
             if hasattr(part, 'number'):
-                if pt_format == 'gpt':
-                    raise ExtensionError('Partition numbering can\'t be '
-                                         'overridden when using a GPT')
-                part_num_req = partition['number']
-                if 1 <= part_num_req <= allowed_partitions:
-                    part_num = part_num_req
-                else:
-                    raise ExtensionError('Requested partition number %s. '
-                                         'A maximum of %d partitions is '
-                                         'supported for %s partition '
-                                         'tables' % (part_num_req,
-                                          allowed_partitions, pt_format))
+                num = part.number
+            else:
+                for n in range(1, self.max_allowed_partitions + 1):
+                    if n not in used_numbers and n not in requested_numbers:
+                        num = n
 
-            self.__numbers.append(part_num)
-            used_numbers.add(part_num)
+            part.number = num
+            used_numbers.add(num)
 
-            # TODO fill
-            # if ! fill
+        return part_list
 
     def get_length_sectors(self, size_bytes):
         """Get a length in sectors, aligned to 4096 byte boundaries"""
@@ -241,50 +250,45 @@ class PartitionList(object):
                ((int(size_bytes) % 4096) != 0) *
                (4096 / self.sector_size))
 
-    def free_space(self):
-        """
-        Calculate the amount of unused space left by the partitions currently
-        in the list
-        """
-        self.extent.filled_space = 0
-        for part in self.__partition_list:
-            self.extent.pack(part.extent)
-        return self.extent.free_space()
-
     def __str__(self):
-        pass
+        return '<PartitionList, Length=%d>' % len(self)
 
+    def __len__(self):
+        return len(self.__partition_list)
+    
     def __setitem__(self, i, value):
         """ Update the ith item in the list """
         self.append(partition)
-        self.__update_extents(self)
 
 
 class Partition(object):
     """
     A class to describe a partition in a disk or image
 
-    The required attributes are loaded as key-value pairs from a dict.
+    The required attributes are loaded as key-value pairs from a kwargs dict.
 
     Required attributes:
-        size: String describing the size of the partition in bytes (TODO human readable?).
-              This may also be 'fill' to expand this partition to fill used space (TODO: normalise)
+        size: String describing the size of the partition in bytes
+        (TODO human readable?).
+              This may also be 'fill' to indicate that this partition should
+              be expanded to fill all unused space. Where there is more than
+              one fill partition, unused space is divided equally between the
+              fill partitions.
         fdisk_type: A number describing the hexadecimal code used by fdisk
                     to describe the partition type (TODO: string + validate)
 
     Optional attributes:
         format: A string describing the filesystem format for the
                 partition, or 'none' to skip filesystem creation
-        description: A string describing the partition
-        boot: Boolean describing whether the bootable flag should be set
-        mountpoint: String describing the mountpoint for the partition (TODO: strip / ?)
+        description: A string describing the partition, for documentation
+        boot: Boolean string describing whether to set the bootable flag
+        mountpoint: String describing the mountpoint for the partition
         number: Number used to override partition numbering for the
                 partition (MBR only)
         TODO: label
     """
 
     def __init__(self, size=0, fdisk_type=0x81, **kwargs):
-        # TODO fill
         if not size and 'size' not in kwargs:
             raise PartitioningError('Partition must have a non-zero size')
         self.__dict__.update(**kwargs)
@@ -306,18 +310,14 @@ class Partition(object):
         return False
 
 
-
-
-# subclass / override baserock specific things, i.e. filesystem creation, dd
-
 class Device(object):
     """
     A class to describe a disk or image, and the partition layout
     used inside it
 
-    Attributes are loaded from , containing key-value
-    pairs describing the required attributes. This may be loaded
-    from a YAML specification using the module function loadYAML().
+    Attributes are loaded from kwargs, containing key-value
+    pairs describing the required attributes. These may be loaded
+    from a YAML specification using the global function loadYAML().
 
     Attributes:
         location: The location of the device or disk image
@@ -335,14 +335,15 @@ class Device(object):
                     object as a dict (see Partition)
     """
 
-# fillable device?
-
     def __init__(self, location, size, **kwargs):
 
         if 'partition_table_format' not in kwargs:
             self.partition_table_format = 'gpt'
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
+
+        self.size = size
+#        self.size = getBytes(size) #TODO
 
         # Get sector size
         self.sector_size = self.getSectorSize(location)
@@ -382,35 +383,29 @@ class Device(object):
             # The duplicate GPT does not include the 'protective' MBR
             gpt_size = (self.sector_size + (16 * 1024)) / self.sector_size
             # total usable sectors
-            self.extent = Extext(start=start,
+            self.extent = Extent(start=start,
                                  end=(disk_size_sectors - gpt_size))
         else:
             self.extent = Extent(start=start, end=disk_size_sectors)
 
-        self.parts = PartitionList(self.extent)
-
-
-
         self.updatePartitions()
 
-        self.size = getBytes(size) #TODO
-
-        self.parts = PartitionList()
-
-
+        # Create an empty PartitionList to contain partitions
+        self.partition_list = PartitionList(self)
 
     def updatePartitions(self, partitions=None):
         """
-        Populate parts with Partition objects
+        Populate parts with Partition objects from a list of attributes
 
         @param partitions: List of partition attributes
         @type partitions:  list
         """
-        self.parts = PartitionList()
+        self.partition_list = PartitionList(self)
         if partitions:
             self.partitions = partitions
-        for partition in self.partitions:
-            self.addPartition(partition)
+        if hasattr(self, 'partitions'):
+            for partition_args in self.partitions:
+                self.addPartition(**partition_args)
 
     def addPartition(self, **kwargs):
         '''
@@ -419,8 +414,8 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
-        if len(self.parts) < self.max_allowed_partitions:
-            self.parts.append(partition)
+        if len(self.partition_list) < self.max_allowed_partitions:
+            self.partition_list.append(partition)
         else:
             raise PartitioningError('Cannot add partition: Maximum number of '
                                     'partitions has been reached')
@@ -439,14 +434,13 @@ class Device(object):
         return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
                                                 location))
 
-
     def __filterFdiskListOutput(self, regex, location):
         r = re.compile(regex, re.DOTALL)
         m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
         if m:
             return m.group(1)
         else:
-            raise ExtensionError('Error reading information from fdisk')
+            raise PartitioningError('Error reading information from fdisk')
 
     @staticmethod
     def commit(self):
@@ -504,150 +498,148 @@ class Device(object):
         return 'Device: location=%s, size=%s' % (self.location, self.size)
 
 
-# Creating images?
 
-    # TODO module method
-    def loadYAML(yamlFile):
-        '''
-        Load partition data from a yaml specification
+def loadYAML(yamlFile):
+    '''
+    Load partition data from a yaml specification
 
-        The YAML file describes the attributes documented in the PartitionInfo
-        and Partition classes. A simple example might be:
+    The YAML file describes the attributes documented in the PartitionInfo
+    and Partition classes. A simple example might be:
 
-        @param yaml_file: Path to a YAML file to load
-        @type yaml_file:  str
+    @param yaml_file: Path to a YAML file to load
+    @type yaml_file:  str
 
-        @return Device
-        @rtype Device
+    @return Device
+    @rtype Device
 
-        '''
-        with open(yamlFile, 'r') as f:
-            kwargs = yaml.safe_load(f)
-        return Device(location, size, **kwargs)
+    '''
+    with open(yamlFile, 'r') as f:
+        kwargs = yaml.safe_load(f)
+    return Device(location, size, **kwargs)
 
 
 
-    def verifyDevice(self, device): # TODO sector size
-        ''' Calculate offsets, sizes, and numbering for each partition
+def verifyDevice(self, device): # TODO sector size
+    ''' Calculate offsets, sizes, and numbering for each partition
 
-            This function takes a dict described by the YAML partition
-            specification and returns a modified dict with additional
-            information added to it, in order to fully describe the required
-            partition layout. It also checks for some potential issues in the
-            provided partition specification '''
+        This function takes a dict described by the YAML partition
+        specification and returns a modified dict with additional
+        information added to it, in order to fully describe the required
+        partition layout. It also checks for some potential issues in the
+        provided partition specification '''
 
-        requested_numbers = set(partition['number']
-                            for partition in parts
-                            if 'number' in partition)
+    requested_numbers = set(partition['number']
+                        for partition in parts
+                        if 'number' in partition)
 
-        # Process partition numbering and boot flag
-        used_numbers = set()
-        seen_mountpoints = set()
-        for partition in partitions:
-            # Find the next unused partition number
-            for n in xrange(1, allowed_partitions + 1):
-                if n not in used_numbers and n not in requested_numbers:
-                    part_num = n
-                    break
-                elif n == allowed_partitions:
-                    raise ExtensionError('A maximum of %d partitions is '
-                                         'supported for %s partition '
-                                         'tables' %
-                                         (allowed_partitions, pt_format))
+    # Process partition numbering and boot flag
+    used_numbers = set()
+    seen_mountpoints = set()
+    for partition in partitions:
+        # Find the next unused partition number
+        for n in xrange(1, allowed_partitions + 1):
+            if n not in used_numbers and n not in requested_numbers:
+                part_num = n
+                break
+            elif n == allowed_partitions:
+                raise ExtensionError('A maximum of %d partitions is '
+                                     'supported for %s partition '
+                                     'tables' %
+                                     (allowed_partitions, pt_format))
 
-            if 'number' in partition:
-                if pt_format == 'gpt':
-                    raise ExtensionError('Partition numbering can\'t be '
-                                         'overridden when using a GPT')
-                part_num_req = partition['number']
-                if 1 <= part_num_req <= allowed_partitions:
-                    if part_num_req not in used_numbers:
-                        part_num = part_num_req
-                    else:
-                        raise ExtensionError('Repeated partition number')
+        if 'number' in partition:
+            if pt_format == 'gpt':
+                raise ExtensionError('Partition numbering can\'t be '
+                                     'overridden when using a GPT')
+            part_num_req = partition['number']
+            if 1 <= part_num_req <= allowed_partitions:
+                if part_num_req not in used_numbers:
+                    part_num = part_num_req
                 else:
-                    raise ExtensionError('Requested partition number %s. '
-                                         'A maximum of %d partitions is '
-                                         'supported for %s partition '
-                                         'tables' % (part_num_req,
-                                          allowed_partitions, pt_format))
+                    raise ExtensionError('Repeated partition number')
+            else:
+                raise ExtensionError('Requested partition number %s. '
+                                     'A maximum of %d partitions is '
+                                     'supported for %s partition '
+                                     'tables' % (part_num_req,
+                                      allowed_partitions, pt_format))
 
-            partition['number'] = part_num
-            used_numbers.add(part_num)
+        partition['number'] = part_num
+        used_numbers.add(part_num)
 
 
 
-        offset = start
-        for partition in partitions:
-            if partition['size'] != 'fill':
-                size_bytes = self._parse_size(str(partition['size']))
+    offset = start
+    for partition in partitions:
+        if partition['size'] != 'fill':
+            size_bytes = self._parse_size(str(partition['size']))
 
-                # Calculate sector size, aligned to 4096 byte boundaries
+            # Calculate sector size, aligned to 4096 byte boundaries
 #               size_sectors = (size_bytes / sector_size +
 #                              ((size_bytes % 4096) != 0) *
 #                              (4096 / sector_size))
 
-                offset += size_sectors
-                partition['size_sectors'] = size_sectors
-                partition['size'] = size_sectors * sector_size
-
-        if len(['' for partition in partitions
-                   if partition['size'] == 'fill']) > 1:
-            raise ExtensionError('Only one partition can '
-                                 'have \'size: fill\'')
-
-        free_sectors = total_usable_sectors - offset
-
-        offset = start
-        total_size = 0
-        last_sector = 0
-
-        for partition in partitions:
-            # Process filled partition
-            if partition['size'] == 'fill':
-                if free_sectors < 1:
-                    raise ExtensionError(msg='Not enough space to create '
-                                             'fill partition')
-                partition['size_sectors'] = free_sectors
-                partition['size'] = free_sectors * sector_size
-                self.status(msg='Filling partition %s to size: %d bytes' %
-                                 (partition['number'], partition['size']))
-            # Process partition start and end points
-            partition['start'] = offset
-            size_sectors = partition['size_sectors']
-            last_sector = offset + (size_sectors - 1)
-            partition['end'] = last_sector
             offset += size_sectors
+            partition['size_sectors'] = size_sectors
+            partition['size'] = size_sectors * sector_size
 
-        # Size checks
-        self.status(msg='Requested image size: %s bytes '
-                        '(%d sectors of %d bytes)' %
-                        (last_sector * sector_size, last_sector, sector_size))
+    if len(['' for partition in partitions
+               if partition['size'] == 'fill']) > 1:
+        raise ExtensionError('Only one partition can '
+                             'have \'size: fill\'')
 
-        unused_space = total_usable_sectors - last_sector
-        self.status(msg='Unused space: %d bytes (%d sectors)' %
-                         (unused_space * sector_size, unused_space))
+    free_sectors = total_usable_sectors - offset
 
-        if last_sector > total_usable_sectors:
-            raise ExtensionError('Requested total size exceeds '
-                                 'disk image size DISK_SIZE')
+    offset = start
+    total_size = 0
+    last_sector = 0
 
-        self.status(msg='Partition summary:')
-        for partition in partitions:
-            self.status(msg='Number:   %s' % str(partition['number']))
-            self.status(msg='  Start:  %s sectors' % str(partition['start']))
-            self.status(msg='  End:    %s sectors' % str(partition['end']))
-            self.status(msg='  Ftype:  %s' % str(partition['fdisk_type']))
-            self.status(msg='  Format: %s' % str(partition['format']))
-            self.status(msg='  Size:   %s bytes' % str(partition['size']))
+    for partition in partitions:
+        # Process filled partition
+        if partition['size'] == 'fill':
+            if free_sectors < 1:
+                raise ExtensionError(msg='Not enough space to create '
+                                         'fill partition')
+            partition['size_sectors'] = free_sectors
+            partition['size'] = free_sectors * sector_size
+            self.status(msg='Filling partition %s to size: %d bytes' %
+                             (partition['number'], partition['size']))
+        # Process partition start and end points
+        partition['start'] = offset
+        size_sectors = partition['size_sectors']
+        last_sector = offset + (size_sectors - 1)
+        partition['end'] = last_sector
+        offset += size_sectors
 
-        # Sort the partitions by partition number
-        new_partitions = sorted(partitions, key=lambda partition:
-                                partition['number'])
+    # Size checks
+    self.status(msg='Requested image size: %s bytes '
+                    '(%d sectors of %d bytes)' %
+                    (last_sector * sector_size, last_sector, sector_size))
 
-        new_partition_data = partition_data
-        new_partition_data['partitions'] = new_partitions
-        return new_partition_data
+    unused_space = total_usable_sectors - last_sector
+    self.status(msg='Unused space: %d bytes (%d sectors)' %
+                     (unused_space * sector_size, unused_space))
+
+    if last_sector > total_usable_sectors:
+        raise ExtensionError('Requested total size exceeds '
+                             'disk image size DISK_SIZE')
+
+    self.status(msg='Partition summary:')
+    for partition in partitions:
+        self.status(msg='Number:   %s' % str(partition['number']))
+        self.status(msg='  Start:  %s sectors' % str(partition['start']))
+        self.status(msg='  End:    %s sectors' % str(partition['end']))
+        self.status(msg='  Ftype:  %s' % str(partition['fdisk_type']))
+        self.status(msg='  Format: %s' % str(partition['format']))
+        self.status(msg='  Size:   %s bytes' % str(partition['size']))
+
+    # Sort the partitions by partition number
+    new_partitions = sorted(partitions, key=lambda partition:
+                            partition['number'])
+
+    new_partition_data = partition_data
+    new_partition_data['partitions'] = new_partitions
+    return new_partition_data
 
 
 class PartitioningError(Exception):
