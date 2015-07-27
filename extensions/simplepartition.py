@@ -146,7 +146,6 @@ class PartitionList(object):
         self.__iter_index = 0
 
         self.__fill_partition_count = 0
-        self.__unused_space = 0
 
         self.__extents = []
         self.__numbers = []
@@ -210,10 +209,10 @@ class PartitionList(object):
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        extent_total = Extent()
+        self.extent.filled_space = 0
         for extent in self.__extents:
-            extent_total += extent
-        return len(self.extent - extent_total)
+            device_extent.pack(extent)
+        return device_extent.free_space
 
     def __update_extents(self):
         #self.free_space()
