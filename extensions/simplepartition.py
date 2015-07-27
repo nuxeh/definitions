@@ -140,15 +140,11 @@ class PartitionList(object):
         """
         self.device = device
         self.extent = device.extent
+        self.allowed_partitions = device.allowed_partitions
         self.sector_size = device.sector_size
 
         self.__partition_list = []
         self.__iter_index = 0
-
-        self.__fill_partition_count = 0
-
-        self.__extents = []
-        self.__numbers = []
 
     def append(self, partition):
         if isinstance(partition, Partition):
@@ -178,42 +174,46 @@ class PartitionList(object):
         """next() method for Python 2 compatibility"""
         return self.__next__(self)
 
+    def 
+
     def __getitem__(self, i):
         """ Return an updated copy of the ith item in the partition list """
-        self.__update_numbering_and_extents(self)
-        new = copy.deepcopy(__partition_list[i])
+        part_list = copy.deepcopy(__partition_list)
 
-    def __update_numbering_and_extents(self):
-        self.__extents = []
-        self.__numbers = []
-        self.__fill_partition_count = 0
+        fill_partitions = set(partition for partition in part_list
+                              if partition.size == 'fill')
+
         self.extent.filled_space = 0
-        fill_partitions = []
-        requested_numbers = set(part.number for part in self.__partition_list
-                            if hasattr('number', part))
-        fill_partitions = set(part.)
+        for part in part_list:
+            if part.size != 'fill'
+                extent = Extent(start=1,
+                                length=self.get_length_sectors(part.size))
+                self.extent.pack(extent)
+        fill_size = self.extent.free_space() / len(fill_partitions)
 
-            #if part.size == 'fill':
-            #    self.fill_partition_count += 1
-            #    fill_partitions.append(part)
-        for part in self.__partition_list:
-            part_extent = Extent(start=1,
-                                 length=self.get_length_sectors(part.size))
-            self.__extents.append(self.extent.pack(part_extent))
+        for part in fill_partitions:
+            part.size = fill_size
 
+        self.extent.filled_space = 0
+        for part in part_list:
+            extent = Extent(start=1,length=self.get_length_sectors(part.size))
+            part.extent = self.extent.pack(extent)
 
+        used_numbers = set()
+        requested_numbers = set(partition.number for partition in part_list
+                                if hasattr('number', partition))
 
+        # Find the next unused partition number
+        for n in range(1, self.allowed_partitions + 1):
+            if n not in used_numbers and n not in requested_numbers:
+                part_num = n
+                break
 
-            # Find the next unused partition number
-            for n in xrange(1, allowed_partitions + 1):
-                if n not in self.__numbers and n not in requested_numbers:
-                    part_num = n
-                    break
-                elif n == self.device.allowed_partitions: # TODO split out
-                    raise ExtensionError('A maximum of %d partitions is '
-                                         'supported for %s partition '
-                                         'tables' %
-                                         (allowed_partitions, pt_format))
+            elif n == self.allowed_partitions: # TODO split out
+                raise ExtensionError('A maximum of %d partitions is '
+                                     'supported for %s partition '
+                                     'tables' %
+                                     (allowed_partitions, pt_format))
 
             if hasattr(part, 'number'):
                 if pt_format == 'gpt':
@@ -221,10 +221,7 @@ class PartitionList(object):
                                          'overridden when using a GPT')
                 part_num_req = partition['number']
                 if 1 <= part_num_req <= allowed_partitions:
-                    if part_num_req not in used_numbers:
-                        part_num = part_num_req
-                    else:
-                        raise ExtensionError('Repeated partition number')
+                    part_num = part_num_req
                 else:
                     raise ExtensionError('Requested partition number %s. '
                                          'A maximum of %d partitions is '
@@ -233,6 +230,7 @@ class PartitionList(object):
                                           allowed_partitions, pt_format))
 
             self.__numbers.append(part_num)
+            used_numbers.add(part_num)
 
             # TODO fill
             # if ! fill
@@ -248,7 +246,9 @@ class PartitionList(object):
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        __update_numbering_and_extents(self)
+        self.extent.filled_space = 0
+        for part in self.__partition_list:
+            self.extent.pack(part.extent)
         return self.extent.free_space()
 
     def __str__(self):
