@@ -179,24 +179,63 @@ class PartitionList(object):
         return self.__next__(self)
 
     def __getitem__(self, i):
-        """ Return an updated copy of the ith item in list """
+        """ Return an updated copy of the ith item in the partition list """
         self.__update_numbering_and_extents(self)
         new = copy.deepcopy(__partition_list[i])
-        new.extent = __extents[i]
-        new.number = __numbers[i]
-        return new
-
-        #new.number = self.__get_next_number(self, new)
 
     def __update_numbering_and_extents(self):
         self.__extents = []
+        self.__numbers = []
         self.__fill_partition_count = 0
-        ext_total = Extent()
-#        for part in self.__partition_list:
-#            self.__extents.append(Extent(start
-        self.__unused_space = self.free_space(self)
+        self.extent.filled_space = 0
+        fill_partitions = []
+        requested_numbers = set(part.number for part in self.__partition_list
+                            if hasattr('number', part))
+        fill_partitions = set(part.)
+
+            #if part.size == 'fill':
+            #    self.fill_partition_count += 1
+            #    fill_partitions.append(part)
+        for part in self.__partition_list:
+            part_extent = Extent(start=1,
+                                 length=self.get_length_sectors(part.size))
+            self.__extents.append(self.extent.pack(part_extent))
 
 
+
+
+            # Find the next unused partition number
+            for n in xrange(1, allowed_partitions + 1):
+                if n not in self.__numbers and n not in requested_numbers:
+                    part_num = n
+                    break
+                elif n == self.device.allowed_partitions: # TODO split out
+                    raise ExtensionError('A maximum of %d partitions is '
+                                         'supported for %s partition '
+                                         'tables' %
+                                         (allowed_partitions, pt_format))
+
+            if hasattr(part, 'number'):
+                if pt_format == 'gpt':
+                    raise ExtensionError('Partition numbering can\'t be '
+                                         'overridden when using a GPT')
+                part_num_req = partition['number']
+                if 1 <= part_num_req <= allowed_partitions:
+                    if part_num_req not in used_numbers:
+                        part_num = part_num_req
+                    else:
+                        raise ExtensionError('Repeated partition number')
+                else:
+                    raise ExtensionError('Requested partition number %s. '
+                                         'A maximum of %d partitions is '
+                                         'supported for %s partition '
+                                         'tables' % (part_num_req,
+                                          allowed_partitions, pt_format))
+
+            self.__numbers.append(part_num)
+
+            # TODO fill
+            # if ! fill
 
     def get_length_sectors(self, size_bytes):
         """Get a length in sectors, aligned to 4096 byte boundaries"""
@@ -209,18 +248,8 @@ class PartitionList(object):
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        self.extent.filled_space = 0
-        for extent in self.__extents:
-            device_extent.pack(extent)
-        return device_extent.free_space
-
-    def __update_extents(self):
-        #self.free_space()
-        offset = self.extent.start
-        for part in self.__partition_list:
-            if part.size != 'fill':
-                part.extent = Extent(start=offset, size_bytes=part.size)
-                offset = part.extent.end + 1
+        __update_numbering_and_extents(self)
+        return self.extent.free_space()
 
     def __str__(self):
         pass
@@ -383,7 +412,6 @@ class Device(object):
         for partition in self.partitions:
             self.addPartition(partition)
 
-
     def addPartition(self, **kwargs):
         '''
         Add a partition by dict of attributes
@@ -391,21 +419,34 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
-        self.__mountpoints.add(partition.mountpoint)
-
-
-
         if len(self.parts) < self.max_allowed_partitions:
             self.parts.append(partition)
         else:
             raise PartitioningError('Cannot add partition: Maximum number of '
                                     'partitions has been reached')
 
+    def getSectorSize(self, location):
+        """
+        Get the logical sector size of a device or image, in bytes
+        """
+        return int(self.__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
+                                                location))
 
-    def getPartitionByMountpoint(self, mountpoint):
-        '''
-        Get the partition object by its mountpoint
-        '''
+    def getDiskSize(self, location):
+        """
+        Get the total size of a real block device or image, in bytes
+        """
+        return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
+                                                location))
+
+
+    def __filterFdiskListOutput(self, regex, location):
+        r = re.compile(regex, re.DOTALL)
+        m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
+        if m:
+            return m.group(1)
+        else:
+            raise ExtensionError('Error reading information from fdisk')
 
     @staticmethod
     def commit(self):
@@ -465,6 +506,7 @@ class Device(object):
 
 # Creating images?
 
+    # TODO module method
     def loadYAML(yamlFile):
         '''
         Load partition data from a yaml specification
@@ -484,28 +526,6 @@ class Device(object):
         return Device(location, size, **kwargs)
 
 
-    def getSectorSize(self, location):
-        """
-        Get the logical sector size of a device or image, in bytes
-        """
-        return int(self.__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
-                                                location))
-
-    def getDiskSize(self, location):
-        """
-        Get the total size of a real block device or image, in bytes
-        """
-        return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
-                                                location))
-
-
-    def __filterFdiskListOutput(self, regex, location):
-        r = re.compile(regex, re.DOTALL)
-        m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
-        if m:
-            return m.group(1)
-        else:
-            raise ExtensionError('Error reading information from fdisk')
 
     def verifyDevice(self, device): # TODO sector size
         ''' Calculate offsets, sizes, and numbering for each partition
