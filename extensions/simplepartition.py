@@ -65,7 +65,6 @@ class Extent(object):
         return self.start
 
     def __len__(self):
-        """Return the length in sectors"""
         return self.end - self.start + 1
 
     def __add__(self, other):
@@ -109,7 +108,7 @@ class Extent(object):
         """
         length_other = len(other)
         first_free_sector = self.start + self.filled_space
-        if self.filled_space + length_other > len(self):
+        if length_other + self.filled_space > len(self):
             raise PartitioningError('Not enough free space to pack Extent')
         self.filled_space += length_other
         return Extent(start=first_free_sector, length=length_other)
