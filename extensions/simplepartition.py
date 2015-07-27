@@ -46,8 +46,7 @@ class Extent(object):
     """
 
     def __init__(self, start=0, length=0, end=0):
-        if length:
-            if not start:
+        if length and not start:
                 raise PartitioningError('Extent requires a non-zero start '
                                         'point and length')
         if start and length:
@@ -56,6 +55,8 @@ class Extent(object):
         else:
             self.start = int(start)
             self.end = int(end)
+
+        self.filled_space = 0
 
     def __max__(self):
         return self.end
@@ -99,9 +100,28 @@ class Extent(object):
         return ('<Extent: Start=%d, End=%d, Length=%d>' %
                 (self.start, self.end, len(self)))
 
+    def pack(self, other):
+        """
+        Return a new Extent aligned to self's first unused sector
+
+        This is done by length, to quantify fitting an area of disc space
+        inside the other. The filled space in self is calculated and updated.
+        """
+        length_other = len(other)
+        first_free_sector = self.start + self.filled_space
+        if self.filled_space + length_other > len(self):
+            raise PartitioningError('Not enough free space to pack Extent')
+        self.filled_space += length_other
+        return Extent(start=first_free_sector, length=length_other)
+
     def clone(self):
         """Return a copy of the instance of Extent"""
-        return Extent(sel.)
+        new = Extent(start=self.start, end=self.end)
+        new.filled_space = self.filled_space
+        return new
+
+    def free_space(self):
+        return len(self) - self.filled_space
 
 
 class PartitionList(object):
