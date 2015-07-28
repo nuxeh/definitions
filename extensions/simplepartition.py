@@ -131,8 +131,6 @@ class PartitionList(object):
     depends on each of the other partitions in the list.
     """
 
-    # Recalculate before any /access/
-
     def __init__(self, device):
         """
         Initialisation function
@@ -149,15 +147,21 @@ class PartitionList(object):
         self.__iter_index = 0
 
     def append(self, partition):
-        if isinstance(partition, Partition):
-            for part in self:
-                if part.compare(partition):
-                    raise PartitioningError('Duplicated partition %s '
-                                            'attribute' % attrib)
-            self.__partition_list.append(partition)
+        if len(self.__partition_list) < self.device.max_allowed_partitions:
+            if isinstance(partition, Partition):
+                for part in self:
+                    if part.compare(partition):
+                        raise PartitioningError('Duplicated partition %s '
+                                                'attribute' % attrib)
+                self.__partition_list.append(partition)
+            else:
+                raise PartitioningError('PartitionList can only '
+                                        'contain Partition objects')
         else:
-            raise PartitioningError('PartitionList can only '
-                                    'contain Partition objects')
+            raise PartitioningError('Exceeded maximum number of partitions '
+                                    'for %s partition table (%d)' %
+                                    (self.device.partition_table_format,
+                                     self.device.max_allowed_partitions))
 
     def __iter__(self):
         """Return an iterable object"""
@@ -166,11 +170,11 @@ class PartitionList(object):
 
     def __next__(self):
         """Return the next item in an iteration"""
-        partition = self[self.__iter_index]
-        self.__iter_index += 1
-        if self.__iter_index > len(self):
+        if self.__iter_index == len(self.__partition_list):
             raise StopIteration
         else:
+            partition = self[self.__iter_index]
+            self.__iter_index += 1
             return partition
         
     def next(self):
@@ -207,10 +211,12 @@ class PartitionList(object):
 
         fill_partitions = set(partition for partition in part_list
                               if partition.size == 'fill')
+        print part_list
+        print fill_partitions
 
         used_numbers = set()
         requested_numbers = set(partition.number for partition in part_list
-                                if hasattr('number', partition))
+                                if hasattr(partition, 'number'))
 
         # Get free space and the size of 'fill' partitions
         self.extent.filled_space = 0
@@ -219,7 +225,9 @@ class PartitionList(object):
                 extent = Extent(start=1,
                                 length=self.get_length_sectors(part.size))
                 self.extent.pack(extent)
-        fill_size = self.extent.free_space() / len(fill_partitions)
+        if len(fill_partitions):
+            fill_size = self.extent.free_space() / len(fill_partitions)
+            print fill_size
 
         # Set size of fill partitions
         for part in fill_partitions:
@@ -251,7 +259,7 @@ class PartitionList(object):
                (4096 / self.sector_size))
 
     def __str__(self):
-        return '<PartitionList, Length=%d>' % len(self)
+        return '<PartitionList: Length=%d>' % len(self)
 
     def __len__(self):
         return len(self.__partition_list)
@@ -298,7 +306,7 @@ class Partition(object):
     def __str__(self):
         return ('Partition\n'
                 'size: %s\n'
-                'fdisk type: %s' % (self.size, self.fdisk_type))
+                'fdisk type: %s' % (self.size, hex(self.fdisk_type)))
 
     def compare(self, other):
         """Check for mutually exclusive attributes"""
@@ -335,6 +343,8 @@ class Device(object):
                     object as a dict (see Partition)
     """
 
+    min_start_bytes = 1024**2
+
     def __init__(self, location, size, **kwargs):
 
         if 'partition_table_format' not in kwargs:
@@ -343,13 +353,16 @@ class Device(object):
             self.start_offset = 2048
 
         self.size = size
-#        self.size = getBytes(size) #TODO
 
+        if self.size < self.min_start_bytes + 1:
+            raise PartitioningError('Device size must be greater than %d '
+                                    'bytes' % self.min_start_bytes)
+        
         # Get sector size
         self.sector_size = self.getSectorSize(location)
         self.location = location
 
-        # Populate Device attributes from keyword dict
+        # Populate Device attributes from keyword args
         self.__dict__.update(**kwargs)
 
         if self.partition_table_format.lower() == 'gpt':
@@ -361,8 +374,7 @@ class Device(object):
         start = (self.start_offset * 512) / self.sector_size
         # Sector quantities in the specification are assumed to be 512 bytes
         # This converts to the real sector size
-        min_start_bytes = 1024**2
-        if (start * self.sector_size) < min_start_bytes:
+        if (start * self.sector_size) < self.min_start_bytes:
             raise PartitioningError('Start offset should be greater than '
                                     '%d, for %d byte sectors' %
                                     (min_start_bytes / self.sector_size,
@@ -390,9 +402,6 @@ class Device(object):
 
         self.updatePartitions()
 
-        # Create an empty PartitionList to contain partitions
-        self.partition_list = PartitionList(self)
-
     def updatePartitions(self, partitions=None):
         """
         Populate parts with Partition objects from a list of attributes
@@ -405,6 +414,7 @@ class Device(object):
             self.partitions = partitions
         if hasattr(self, 'partitions'):
             for partition_args in self.partitions:
+                print partition_args
                 self.addPartition(**partition_args)
 
     def addPartition(self, **kwargs):
@@ -417,9 +427,12 @@ class Device(object):
         if len(self.partition_list) < self.max_allowed_partitions:
             self.partition_list.append(partition)
         else:
-            raise PartitioningError('Cannot add partition: Maximum number of '
-                                    'partitions has been reached')
+            raise PartitioningError('Exceeded maximum number of partitions '
+                                    'for %s partition table (%d)' %
+                                    (self.partition_table_format,
+                                     self.max_allowed_partitions))
 
+    # TODO: split out
     def getSectorSize(self, location):
         """
         Get the logical sector size of a device or image, in bytes
@@ -495,7 +508,7 @@ class Device(object):
         p.communicate(cmd)
 
     def __str__(self):
-        return 'Device: location=%s, size=%s' % (self.location, self.size)
+        return '<Device: location=%s, size=%s>' % (self.location, self.size)
 
 
 
