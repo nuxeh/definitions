@@ -115,8 +115,6 @@ class Extent(object):
         return Extent(start=first_free_sector, length=length_other)
 
     def free_space(self):
-        print len(self)
-        print self.filled_space
         return len(self) - self.filled_space
 
 
@@ -147,21 +145,17 @@ class PartitionList(object):
         self.__iter_index = 0
 
     def append(self, partition):
-        if len(self.__partition_list) < self.device.max_allowed_partitions:
-            if isinstance(partition, Partition):
-                for part in self:
-                    if part.compare(partition):
-                        raise PartitioningError('Duplicated partition %s '
-                                                'attribute' % attrib)
-                self.__partition_list.append(partition)
-            else:
-                raise PartitioningError('PartitionList can only '
-                                        'contain Partition objects')
+        print 'append...'
+        if isinstance(partition, Partition):
+            for part in self.__partition_list:
+                dup_attrib = part.compare(partition)
+                if dup_attrib:
+                    raise PartitioningError('Duplicated partition attribute '
+                                            '\'%s\'' % dup_attrib)
+            self.__partition_list.append(partition)
         else:
-            raise PartitioningError('Exceeded maximum number of partitions '
-                                    'for %s partition table (%d)' %
-                                    (self.device.partition_table_format,
-                                     self.device.max_allowed_partitions))
+            raise PartitioningError('PartitionList can only '
+                                    'contain Partition objects')
 
     def __iter__(self):
         """Return an iterable object"""
@@ -183,7 +177,7 @@ class PartitionList(object):
 
     def __getitem__(self, i):
         """Return an updated copy of the partition list"""
-        part_list = self.__update_partition_list() # TODO: self probably not needed
+        part_list = self.__update_partition_list()
         return part_list[i]
 
     def free_space(self):
@@ -191,7 +185,7 @@ class PartitionList(object):
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
-        part_list = self.__update_partition_list(self)
+        part_list = self.__update_partition_list()
         self.extent.filled_space = 0
         for part in part_list:
             self.extent.pack(part.extent)
@@ -207,6 +201,7 @@ class PartitionList(object):
         rather than a reference to it, thus leaving the partitions stored
         in the list intact if modified after return.
         """
+        print 'get partition list......'
         part_list = deepcopy(self.__partition_list)
 
         fill_partitions = set(partition for partition in part_list
@@ -313,8 +308,8 @@ class Partition(object):
         non_duplicable = ['number', 'mountpoint']
         for attrib in non_duplicable:
             if hasattr(self, attrib) and hasattr(other, attrib):
-                if self.attrib == other.attrib:
-                    return True
+                if getattr(self, attrib) == getattr(other, attrib):
+                    return attrib
         return False
 
 
@@ -429,7 +424,7 @@ class Device(object):
         else:
             raise PartitioningError('Exceeded maximum number of partitions '
                                     'for %s partition table (%d)' %
-                                    (self.partition_table_format,
+                                    (self.partition_table_format.upper(),
                                      self.max_allowed_partitions))
 
     # TODO: split out
