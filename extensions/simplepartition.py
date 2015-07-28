@@ -57,7 +57,7 @@ class Extent(object):
             self.start = int(start)
             self.end = int(end)
 
-        self.filled_space = 0
+        self.filled_sectors = 0
 
     def __max__(self):
         return self.end
@@ -104,18 +104,18 @@ class Extent(object):
         """
         Return a new Extent aligned to self's first unused sector
 
-        This is done by length, to quantify fitting an area of disc space
+        This is done by length, to quantify fitting an area of disk space
         inside the other. The filled space in self is calculated and updated.
         """
         length_other = len(other)
         first_free_sector = self.start + self.filled_space
-        if length_other + self.filled_space > len(self):
+        if length_other + self.filled_sectors > len(self):
             raise PartitioningError('Not enough free space to pack Extent')
-        self.filled_space += length_other
+        self.filled_sectors += length_other
         return Extent(start=first_free_sector, length=length_other)
 
-    def free_space(self):
-        return len(self) - self.filled_space
+    def free_sectors(self):
+        return len(self) - self.filled_sectors
 
 
 class PartitionList(object):
@@ -179,16 +179,16 @@ class PartitionList(object):
         part_list = self.__update_partition_list()
         return part_list[i]
 
-    def free_space(self):
+    def free_sectors(self):
         """
         Calculate the amount of unused space left by the partitions currently
         in the list
         """
         part_list = self.__update_partition_list()
-        self.extent.filled_space = 0
+        self.extent.filled_sectors = 0
         for part in part_list:
             self.extent.pack(part.extent)
-        return self.extent.free_space()
+        return self.extent.free_sectors()
 
     def __update_partition_list(self):
         """
@@ -211,7 +211,7 @@ class PartitionList(object):
                                 if hasattr(partition, 'number'))
 
         # Get free space and the size of 'fill' partitions
-        self.extent.filled_space = 0
+        self.extent.filled_sectors = 0
         for part in part_list:
             if part.size != 'fill':
                 extent = Extent(start=1,
@@ -219,8 +219,8 @@ class PartitionList(object):
                 self.extent.pack(extent)
 
         if len(fill_partitions):
-            fill_size = self.extent.free_space() / len(fill_partitions)
-            print self.extent.free_space()
+            fill_size = self.extent.free_sectors() / len(fill_partitions)
+            print self.extent.free_sectors()
 
             # Set size of fill partitions
             for part in fill_partitions:
@@ -231,7 +231,7 @@ class PartitionList(object):
         print part_list[4].size # * sector_size
 
         # Allocate aligned Extents and partition numbers
-        self.extent.filled_space = 0
+        self.extent.filled_sectors = 0
         for part in part_list:
             extent = Extent(start=1,length=self.get_length_sectors(part.size))
             part.extent = self.extent.pack(extent)
@@ -274,7 +274,6 @@ class Partition(object):
 
     Required attributes:
         size: String describing the size of the partition in bytes
-        (TODO human readable?).
               This may also be 'fill' to indicate that this partition should
               be expanded to fill all unused space. Where there is more than
               one fill partition, unused space is divided equally between the
