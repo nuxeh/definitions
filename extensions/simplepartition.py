@@ -145,7 +145,6 @@ class PartitionList(object):
         self.__iter_index = 0
 
     def append(self, partition):
-        print 'append...'
         if isinstance(partition, Partition):
             for part in self.__partition_list:
                 dup_attrib = part.compare(partition)
@@ -201,12 +200,10 @@ class PartitionList(object):
         rather than a reference to it, thus leaving the partitions stored
         in the list intact if modified after return.
         """
-        print 'get partition list......'
         part_list = deepcopy(self.__partition_list)
 
         fill_partitions = set(partition for partition in part_list
                               if partition.size == 'fill')
-        print part_list
         print fill_partitions
 
         used_numbers = set()
@@ -220,13 +217,18 @@ class PartitionList(object):
                 extent = Extent(start=1,
                                 length=self.get_length_sectors(part.size))
                 self.extent.pack(extent)
+
         if len(fill_partitions):
             fill_size = self.extent.free_space() / len(fill_partitions)
-            print fill_size
+            print self.extent.free_space()
 
-        # Set size of fill partitions
-        for part in fill_partitions:
-            part.size = fill_size
+            # Set size of fill partitions
+            for part in fill_partitions:
+                part.size = fill_size
+                print repr(part)
+
+        print repr(part_list[4])
+        print part_list[4].size # * sector_size
 
         # Allocate aligned Extents and partition numbers
         self.extent.filled_space = 0
@@ -409,7 +411,6 @@ class Device(object):
             self.partitions = partitions
         if hasattr(self, 'partitions'):
             for partition_args in self.partitions:
-                print partition_args
                 self.addPartition(**partition_args)
 
     def addPartition(self, **kwargs):
