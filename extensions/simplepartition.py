@@ -405,7 +405,7 @@ class Device(object):
         @param partitions: List of partition attributes
         @type partitions:  list
         """
-        self.partition_list = PartitionList(self)
+        self.partitionlist = PartitionList(self)
         if partitions:
             self.partitions = partitions
         if hasattr(self, 'partitions'):
@@ -419,8 +419,8 @@ class Device(object):
         See the Partition class for details of the required attributes
         '''
         partition = Partition(**kwargs)
-        if len(self.partition_list) < self.max_allowed_partitions:
-            self.partition_list.append(partition)
+        if len(self.partitionlist) < self.max_allowed_partitions:
+            self.partitionlist.append(partition)
         else:
             raise PartitioningError('Exceeded maximum number of partitions '
                                     'for %s partition table (%d)' %
