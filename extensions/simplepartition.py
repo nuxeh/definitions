@@ -137,9 +137,7 @@ class PartitionList(object):
         @type device:  Device
         """
         self.device = device
-        self.extent = device.extent # TODO: just store device
-        self.max_allowed_partitions = device.max_allowed_partitions
-        self.sector_size = device.sector_size
+        self.extent = device.extent
 
         self.__partition_list = []
         self.__iter_index = 0
@@ -157,7 +155,7 @@ class PartitionList(object):
                                     'contain Partition objects')
 
     def __iter__(self):
-        """Return an iterable object"""
+        """Return self as an iterable object"""
         self.__iter_index = 0
         return self
 
@@ -171,7 +169,7 @@ class PartitionList(object):
             return partition
         
     def next(self):
-        """next() method for Python 2 compatibility"""
+        """Provide a next() method for Python 2 compatibility"""
         return self.__next__()
 
     def __getitem__(self, i):
@@ -194,8 +192,8 @@ class PartitionList(object):
         """
         Return an updated copy of the partition list
         
-        This includes allocating an extent and numbering for the returned
-        partition object. A copy of the partition list is made so that the
+        This includes allocating an extent and numbering for each Partition
+        object in the list. A copy of the partition list is made so that the
         returned partition object is a copy of the stored Partition object
         rather than a reference to it, thus leaving the partitions stored
         in the list intact if modified after return.
@@ -204,7 +202,6 @@ class PartitionList(object):
 
         fill_partitions = set(partition for partition in part_list
                               if partition.size == 'fill')
-        print fill_partitions
 
         used_numbers = set()
         requested_numbers = set(partition.number for partition in part_list
@@ -221,16 +218,11 @@ class PartitionList(object):
 
         if len(fill_partitions):
             fill_size = self.extent.free_sectors() / len(fill_partitions)
-            print self.extent.free_sectors()
 
             # Set size of fill partitions
             for part in fill_partitions:
                 part.size = fill_size
                 part.extent = Extent(start=1, length=fill_size)
-                print repr(part)
-
-        print repr(part_list[4])
-        print part_list[4].size
 
         # Allocate aligned Extents and process partition numbers
         self.extent.filled_sectors = 0
@@ -241,9 +233,10 @@ class PartitionList(object):
             if hasattr(part, 'number'):
                 num = part.number
             else:
-                for n in range(1, self.max_allowed_partitions + 1):
+                for n in range(1, self.device.max_allowed_partitions + 1):
                     if n not in used_numbers and n not in requested_numbers:
                         num = n
+                        break
 
             part.number = num
             used_numbers.add(num)
@@ -252,9 +245,9 @@ class PartitionList(object):
 
     def get_length_sectors(self, size_bytes):
         """Get a length in sectors, aligned to 4096 byte boundaries"""
-        return (int(size_bytes) / self.sector_size +
+        return (int(size_bytes) / self.device.sector_size +
                ((int(size_bytes) % 4096) != 0) *
-               (4096 / self.sector_size))
+               (4096 / self.device.sector_size))
 
     def __str__(self):
         return '<PartitionList: Length=%d>' % len(self)
