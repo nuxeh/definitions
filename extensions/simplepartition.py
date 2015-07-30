@@ -71,18 +71,6 @@ class Extent(object):
         self.end += len(other)
         return self
 
-    def __sub__(self, other):
-        if other > self:
-            raise PartitioningError('subtrahend is greater than minuend')
-        return Extent(start=self.start,
-                      length=(len(self) - len(other)))
-
-    def __isub__(self, other):
-        if other > self:
-            return Extent() # TODO: necessary?
-        self.end -= len(other)
-        return self
-
     def __gt__(self, other):
         return len(self) > len(other)
 
@@ -200,17 +188,17 @@ class PartitionList(object):
             if part.size != 'fill':
                 extent = Extent(start=1,
                                 length=self.get_length_sectors(part.size))
-                self.extent.pack(extent)
                 part.extent = extent
+                self.extent.pack(extent)
 
+        # Allocate aligned Extents and process partition numbers
         if len(fill_partitions):
             fill_size = self.extent.free_sectors() / len(fill_partitions)
             # Set size of fill partitions
             for part in fill_partitions:
-                part.size = fill_size
+                part.size = fill_size * self.device.sector_size
                 part.extent = Extent(start=1, length=fill_size)
 
-        # Allocate aligned Extents and process partition numbers
         self.extent.filled_sectors = 0
         for part in part_list:
             part.extent = self.extent.pack(part.extent)
@@ -236,7 +224,10 @@ class PartitionList(object):
                (4096 / self.device.sector_size))
 
     def __str__(self):
-        return '<PartitionList: Length=%d>' % len(self)
+        string = ''
+        for part in self:
+            string = '%s\n%s\n' % (part, string)
+        return string.rstrip()
 
     def __len__(self):
         return len(self.__partition_list)
@@ -391,11 +382,11 @@ class Device(object):
                 self.addPartition(**partition_args)
 
     def addPartition(self, **kwargs):
-        '''
+        """
         Add a partition by a mapping of its attributes
 
         See the Partition class for details of the available attributes
-        '''
+        """
         partition = Partition(**kwargs)
         if len(self.partitionlist) < self.max_allowed_partitions:
             self.partitionlist.append(partition)
@@ -471,20 +462,20 @@ class PartitioningError(Exception):
         return self.msg
 
 
-def loadYAML(yamlFile):
+def loadYAML(yaml_file):
     """
     Load partition data from a yaml specification
 
     The YAML file describes the attributes documented in the Device
     and Partition classes.
 
-    Parameters:
-        yaml_file - String path to a YAML file to load
+    Args:
+        yaml_file: String path to a YAML file to load
 
     Returns:
         A Device object
     """
-    with open(yamlFile, 'r') as f:
+    with open(yaml_file, 'r') as f:
         kwargs = yaml.safe_load(f)
     return Device(location, size, **kwargs)
 
@@ -508,36 +499,35 @@ def __filterFdiskListOutput(regex, location):
 
 
 @contextlib.contextmanager
-def create_loopback(location, offset=0, size=0):
+def create_loopback(mount_path, offset=0, size=0):
     """
-    Create a loopback device for accessing block devices
+    Create a loopback device for accessing partitions in block devices
 
-    Parameters:
-        offset - Offset of the start of a partition in bytes
-        size - Limits the size of the partition, in bytes
+    Args:
+        mount_path: String path to mount
+        offset: Offset of the start of a partition in bytes (default 0)
+        size: Limits the size of the partition, in bytes (default 0)
     Returns:
         The path to a created loopback device node
     """
 
     try:
+        base_args = ['losetup', '--show', '-f', '-P', '-o', str(offset)]
         if size and offset:
-            cmd = ['losetup', '--show', '-f', '-P', '-o', str(offset),
-                   '--sizelimit', str(size), location]
+            cmd = base_args + ['--sizelimit', str(size), mount_path]
         else:
-            cmd = ['losetup', '--show', '-f', '-P', '-o', str(offset),
-                    location]
-        device = subprocess.check_output(cmd).rstrip()
+            cmd = base_args + [mount_path]
+        loop_device = subprocess.check_output(cmd).rstrip()
         # Allow the system time to see the new device
         # On some systems, mounts created on the loopdev
         # too soon after creating the loopback device
         # may be unreliable, even though the -P option
         # (--partscan) is passed to losetup
         time.sleep(1)
-    except BaseException:
-        sys.stderr.write('Error creating loopback')
-        raise
+    except subprocess.CalledProcessError as error:
+        raise PartitioningError('Error creating loopback: %s' % error.output)
     try:
-        yield device
+        yield loop_device
     finally:
         subprocess.check_call(['losetup', '-d', device])
 
