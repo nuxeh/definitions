@@ -269,11 +269,6 @@ class Partition(object):
         self.fdisk_type = fdisk_type
         self.size = size
 
-    def __str__(self):
-        return ('Partition\n'
-                'size: %s\n'
-                'fdisk type: %s' % (self.size, hex(self.fdisk_type)))
-
     def compare(self, other):
         """Check for mutually exclusive attributes"""
         non_duplicable = ['number', 'mountpoint']
@@ -282,6 +277,22 @@ class Partition(object):
                 if getattr(self, attrib) == getattr(other, attrib):
                     return attrib
         return False
+
+    def __str__(self):
+        string = ('Partition\n'
+                        '    size:       %s\n'
+                        '    fdisk type: %s'
+                   % (self.size, hex(self.fdisk_type)))
+
+        if hasattr(self, 'extent'):
+            string += (
+                      '\n    start:      %s'
+                      '\n    end:        %s'
+                        % (self.extent.start, self.extent.end))
+        if hasattr(self, 'number'):
+            string += '\n    number:     %s' % self.number
+
+        return string
 
 
 class Device(object):
