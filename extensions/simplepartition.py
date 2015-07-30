@@ -218,7 +218,6 @@ class PartitionList(object):
 
         if len(fill_partitions):
             fill_size = self.extent.free_sectors() / len(fill_partitions)
-
             # Set size of fill partitions
             for part in fill_partitions:
                 part.size = fill_size
@@ -273,7 +272,7 @@ class Partition(object):
               one fill partition, unused space is divided equally between the
               fill partitions.
         fdisk_type: A number describing the hexadecimal code used by fdisk
-                    to describe the partition type (TODO: string + validate)
+                    to describe the partition type
 
     Optional attributes:
         format: A string describing the filesystem format for the
@@ -282,8 +281,7 @@ class Partition(object):
         boot: Boolean string describing whether to set the bootable flag
         mountpoint: String describing the mountpoint for the partition
         number: Number used to override partition numbering for the
-                partition (MBR only)
-        TODO: label
+                partition (Possible only when using an MBR partition table)
     """
 
     def __init__(self, size=0, fdisk_type=0x81, **kwargs):
@@ -322,15 +320,15 @@ class Device(object):
         size: The size in bytes (or a TODO human readable string) describing
               the total amount of space the partition table on the device
               will occupy
-        parts: A list of Partition objects describing the partitions on the
-               device
         disk_size: Number or string describing the total disk size in
                    bytes (TODO: or 'fill' for a real device ?)
         start_sector: The first 512 byte sector of the first partition
         partition_table_format: A string describing the type of partition
                                 table used on the device
         partitions: A list containing the attributes for each partition
-                    object as a dict (see Partition)
+                    object as a mapping (see Partition). Running the
+                    updatePartitions() method will populate the partition
+                    list based on the contents of the partitions attribute.
     """
 
     min_start_bytes = 1024**2
@@ -384,7 +382,6 @@ class Device(object):
             # supporting up to 128 partitions (128 bytes per entry).
             # The duplicate GPT does not include the 'protective' MBR
             gpt_size = (self.sector_size + (16 * 1024)) / self.sector_size
-            # total usable sectors
             self.extent = Extent(start=start,
                                  end=(disk_size_sectors - gpt_size))
         else:
@@ -408,9 +405,9 @@ class Device(object):
 
     def addPartition(self, **kwargs):
         '''
-        Add a partition by dict of attributes
+        Add a partition by a mapping of its attributes
 
-        See the Partition class for details of the required attributes
+        See the Partition class for details of the available attributes
         '''
         partition = Partition(**kwargs)
         if len(self.partitionlist) < self.max_allowed_partitions:
@@ -420,29 +417,6 @@ class Device(object):
                                     'for %s partition table (%d)' %
                                     (self.partition_table_format.upper(),
                                      self.max_allowed_partitions))
-
-    # TODO: split out
-    def getSectorSize(self, location):
-        """
-        Get the logical sector size of a device or image, in bytes
-        """
-        return int(self.__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
-                                                location))
-
-    def getDiskSize(self, location):
-        """
-        Get the total size of a real block device or image, in bytes
-        """
-        return int(self.__filterFdiskListOutput('.*Disk.*?(\d+) bytes',
-                                                location))
-
-    def __filterFdiskListOutput(self, regex, location):
-        r = re.compile(regex, re.DOTALL)
-        m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
-        if m:
-            return m.group(1)
-        else:
-            raise PartitioningError('Error reading information from fdisk')
 
     @staticmethod
     def commit(self):
@@ -500,7 +474,6 @@ class Device(object):
         return '<Device: location=%s, size=%s>' % (self.location, self.size)
 
 
-
 def loadYAML(yamlFile):
     '''
     Load partition data from a yaml specification
@@ -519,6 +492,38 @@ def loadYAML(yamlFile):
         kwargs = yaml.safe_load(f)
     return Device(location, size, **kwargs)
 
+def getSectorSize(location):
+    """
+    Get the logical sector size of a device or image, in bytes
+    """
+    return int(__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
+                                       location))
+
+def getDiskSize(location):
+    """
+    Get the total size of a real block device or image, in bytes
+    """
+    return int(__filterFdiskListOutput('.*Disk.*?(\d+) bytes', location))
+
+def __filterFdiskListOutput(self, regex, location):
+    r = re.compile(regex, re.DOTALL)
+    m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
+    if m:
+        return m.group(1)
+    else:
+        raise PartitioningError('Error reading information from fdisk')
+
+
+class PartitioningError(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
+
 
 
 def verifyDevice(self, device): # TODO sector size
@@ -530,97 +535,13 @@ def verifyDevice(self, device): # TODO sector size
         partition layout. It also checks for some potential issues in the
         provided partition specification '''
 
-    requested_numbers = set(partition['number']
-                        for partition in parts
-                        if 'number' in partition)
-
-    # Process partition numbering and boot flag
-    used_numbers = set()
-    seen_mountpoints = set()
-    for partition in partitions:
-        # Find the next unused partition number
-        for n in xrange(1, allowed_partitions + 1):
-            if n not in used_numbers and n not in requested_numbers:
-                part_num = n
-                break
-            elif n == allowed_partitions:
-                raise ExtensionError('A maximum of %d partitions is '
-                                     'supported for %s partition '
-                                     'tables' %
-                                     (allowed_partitions, pt_format))
-
-        if 'number' in partition:
-            if pt_format == 'gpt':
-                raise ExtensionError('Partition numbering can\'t be '
-                                     'overridden when using a GPT')
-            part_num_req = partition['number']
-            if 1 <= part_num_req <= allowed_partitions:
-                if part_num_req not in used_numbers:
-                    part_num = part_num_req
-                else:
-                    raise ExtensionError('Repeated partition number')
-            else:
-                raise ExtensionError('Requested partition number %s. '
-                                     'A maximum of %d partitions is '
-                                     'supported for %s partition '
-                                     'tables' % (part_num_req,
-                                      allowed_partitions, pt_format))
-
-        partition['number'] = part_num
-        used_numbers.add(part_num)
-
-
-
-    offset = start
-    for partition in partitions:
-        if partition['size'] != 'fill':
-            size_bytes = self._parse_size(str(partition['size']))
-
-            # Calculate sector size, aligned to 4096 byte boundaries
-#               size_sectors = (size_bytes / sector_size +
-#                              ((size_bytes % 4096) != 0) *
-#                              (4096 / sector_size))
-
-            offset += size_sectors
-            partition['size_sectors'] = size_sectors
-            partition['size'] = size_sectors * sector_size
-
-    if len(['' for partition in partitions
-               if partition['size'] == 'fill']) > 1:
-        raise ExtensionError('Only one partition can '
-                             'have \'size: fill\'')
-
-    free_sectors = total_usable_sectors - offset
-
-    offset = start
-    total_size = 0
-    last_sector = 0
-
-    for partition in partitions:
-        # Process filled partition
-        if partition['size'] == 'fill':
-            if free_sectors < 1:
-                raise ExtensionError(msg='Not enough space to create '
-                                         'fill partition')
-            partition['size_sectors'] = free_sectors
-            partition['size'] = free_sectors * sector_size
-            self.status(msg='Filling partition %s to size: %d bytes' %
-                             (partition['number'], partition['size']))
-        # Process partition start and end points
-        partition['start'] = offset
-        size_sectors = partition['size_sectors']
-        last_sector = offset + (size_sectors - 1)
-        partition['end'] = last_sector
-        offset += size_sectors
+    raise ExtensionError('Partition numbering can\'t be '
+                         'overridden when using a GPT')
 
     # Size checks
     self.status(msg='Requested image size: %s bytes '
                     '(%d sectors of %d bytes)' %
                     (last_sector * sector_size, last_sector, sector_size))
-
-    unused_space = total_usable_sectors - last_sector
-    self.status(msg='Unused space: %d bytes (%d sectors)' %
-                     (unused_space * sector_size, unused_space))
 
     if last_sector > total_usable_sectors:
         raise ExtensionError('Requested total size exceeds '
@@ -642,14 +563,3 @@ def verifyDevice(self, device): # TODO sector size
     new_partition_data = partition_data
     new_partition_data['partitions'] = new_partitions
     return new_partition_data
-
-
-class PartitioningError(Exception):
-
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
