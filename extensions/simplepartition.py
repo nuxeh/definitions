@@ -14,9 +14,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-A simple Python module for creating partition tables on devices or images
-
-It is a simple Python wrapper for command line fdisk.
+A simple Python wrapper for command line fdisk.
 
 It is intended to work on Linux, though may work on other operating
 systems using fdisk from util-linux.
@@ -241,7 +239,7 @@ class Partition(object):
     """
     A class to describe a partition in a disk or image
 
-    The required attributes are loaded as key-value pairs from a kwargs dict.
+    The required attributes are loaded via kwargs.
 
     Required attributes:
         size: String describing the size of the partition in bytes
@@ -253,8 +251,10 @@ class Partition(object):
                     to describe the partition type
 
     Optional attributes:
+        **kwargs: A mapping of any keyword arguments
         format: A string describing the filesystem format for the
-                partition, or 'none' to create empty space.
+                partition. Any partitions with format='none' will be skipped
+                at partition table creation to create an area of unused space.
         description: A string describing the partition, for documentation
         boot: Boolean string describing whether to set the bootable flag
         mountpoint: String describing the mountpoint for the partition
@@ -278,7 +278,9 @@ class Partition(object):
                     return attrib
         return False
 
-    def __str__(self):
+    def __str__(self, header=False):
+        if header:
+            print 'Header'
         string = ('Partition\n'
                         '    size:       %s\n'
                         '    fdisk type: %s'
@@ -297,27 +299,26 @@ class Partition(object):
 
 class Device(object):
     """
-    A class to describe a disk or image, and the partition layout
-    used inside it
+    A class to describe a disk or image, and its partition layout
 
-    Attributes are loaded from kwargs, containing key-value
-    pairs describing the required attributes. These may be loaded
-    from a YAML specification using the global function loadYAML().
+    Attributes may be loaded from **kwargs, containing key-value
+    pairs describing the required attributes. This may be loaded
+    from a YAML specification using the module function loadYAML().
 
-    Attributes:
+    Required attributes:
         location: The location of the device or disk image
-        size: The size in bytes (or a TODO human readable string) describing
-              the total amount of space the partition table on the device
-              will occupy
-        disk_size: Number or string describing the total disk size in
-                   bytes (TODO: or 'fill' for a real device ?)
-        start_sector: The first 512 byte sector of the first partition
+        size: The size in bytes describing the total amount of space the
+              partition table on the device will occupy
+
+    Optional attributes:
+        **kwargs: A mapping of any keyword arguments
+        start_offset: The first 512 byte sector of the first partition
+                      (default: 2048)
         partition_table_format: A string describing the type of partition
-                                table used on the device
-        partitions: A list containing the attributes for each partition
-                    object as a mapping (see Partition). Running the
-                    updatePartitions() method will populate the partition
-                    list based on the contents of the partitions attribute.
+                                table used on the device (default: 'gpt')
+        partitions: A list of mappings for the attributes for each Partition
+                    object. updatePartitions() populates the partition list
+                    based on the contents of this attribute.
     """
 
     min_start_bytes = 1024**2
@@ -329,7 +330,14 @@ class Device(object):
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
 
-        self.size = size
+        target_size = getDiskSize(location)
+        if size.lower() == 'fill':
+            self.size = target_size
+        else:
+            self.size = size
+
+        if self.size > target_size:
+            raise PartitioningError('Not enough space available on target')
 
         if self.size < self.min_start_bytes + 1:
             raise PartitioningError('Device size must be greater than %d '
@@ -363,18 +371,19 @@ class Device(object):
             print('WARNING: Start sector is not aligned '
                   'to 4096 byte sector boundaries')
 
-        disk_size_sectors = self.size / self.sector_size
+        # End sector is one sector less than the disk length
+        disk_end_sector = (self.size / self.sector_size) - 1
         if self.partition_table_format == 'gpt':
             # GPT partition table is duplicated at the end of the device.
             # GPT header takes one sector, whatever the sector size,
             # with a 16384 byte 'minimum' area for partition entries,
             # supporting up to 128 partitions (128 bytes per entry).
             # The duplicate GPT does not include the 'protective' MBR
-            gpt_size = (self.sector_size + (16 * 1024)) / self.sector_size
+            gpt_size = ((16 * 1024) / self.sector_size) + 1
             self.extent = Extent(start=start,
-                                 end=(disk_size_sectors - gpt_size))
+                                 end=(disk_end_sector - gpt_size))
         else:
-            self.extent = Extent(start=start, end=disk_size_sectors)
+            self.extent = Extent(start=start, end=disk_end_sector)
 
         self.updatePartitions()
 
@@ -453,11 +462,20 @@ class Device(object):
                              stdin=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
-        p.communicate(cmd)
+        output = p.communicate(cmd)
+        if 'Value out of range.' in output[1]:
+            raise PartitioningError('Device is too small')
 
-    def create_filesystems():
+    def create_filesystems(self):
         """Create filesystems on the device"""
-
+        for part in self.partitionlist:
+            if part.format.lower() != 'none':
+                with create_loopback(self.location,
+                                     part.extent.start * self.sector_size,
+                                     part.size) as device:
+                    print 'creating %s on %s' % (part.format, part)
+#                   subprocess.check_call(['mkfs.' + part.format,
+#                                          block_device])
 
     def __str__(self):
         return ('<Device: location=%s, size=%s, partitions: %s>' %
@@ -473,7 +491,7 @@ class PartitioningError(Exception):
         return self.msg
 
 
-def loadYAML(yaml_file):
+def loadYAML(yaml_file, location, size):
     """
     Load partition data from a yaml specification
 
@@ -482,6 +500,8 @@ def loadYAML(yaml_file):
 
     Args:
         yaml_file: String path to a YAML file to load
+        location: Path to the device node or image to use for partitioning
+        size: The size of the device node in bytes
 
     Returns:
         A Device object

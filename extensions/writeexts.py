@@ -497,7 +497,7 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint, disk_uuid)
             else:
                 self.generate_bootloader_config(mountpoint)
-            self.install_bootloader(mountpoint)
+            self.install_bootloader(mountpoint) # <<<--- this needs to point to the entire device
 
     def create_orig(self, version_root, temp_root):
         '''Create the default "factory" system.'''
