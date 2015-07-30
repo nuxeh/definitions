@@ -13,29 +13,22 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# jsonschema
-# Partitioning error handling class - geometry error?
-# Pretty printing / pretty input
-
 """
-A simple Python module for creating partitioned devices or images
+A simple Python module for creating partition tables on devices or images
 
-This creates partitions by making calls to the fdisk command line
-tool.
+It is a simple Python wrapper for command line fdisk.
 
 It is intended to work on Linux, though may work on other operating
 systems using fdisk from util-linux.
 
-Requires fdisk <versions>
-
 """
 
+import contextlib
 from copy import deepcopy
 import re
 import subprocess
 import yaml
-# staticmethod
+
 
 class Extent(object):
     """
@@ -120,21 +113,19 @@ class Extent(object):
 
 class PartitionList(object):
     """
-    An iterable object used to contain partitions, and process data about them
+    An iterable object for containing and processing a list Partition objects
 
-    The PartitionList calculates the geometry for each partition in the list,
-    when accessed, so returned partitions have up-to-date geometry and
-    numbering. This class eases the calculation of partition sizes and
-    numbering, as for numbering, and Partitions with a 'fill' size, the result
-    depends on each of the other partitions in the list.
+    This class eases the calculation of partition sizes and numbering, as in
+    these cases, the properties of a given partition depends on depends on
+    each of the other partitions in the list.
     """
 
     def __init__(self, device):
         """
         Initialisation function
 
-        @param device: A Device object
-        @type device:  Device
+        Parameters:
+            device - A Device object
         """
         self.device = device
         self.extent = device.extent
@@ -167,7 +158,7 @@ class PartitionList(object):
             partition = self[self.__iter_index]
             self.__iter_index += 1
             return partition
-        
+
     def next(self):
         """Provide a next() method for Python 2 compatibility"""
         return self.__next__()
@@ -178,10 +169,7 @@ class PartitionList(object):
         return part_list[i]
 
     def free_sectors(self):
-        """
-        Calculate the amount of unused space left by the partitions currently
-        in the list
-        """
+        """Calculate the amount of unused space in the list"""
         part_list = self.__update_partition_list()
         self.extent.filled_sectors = 0
         for part in part_list:
@@ -190,13 +178,12 @@ class PartitionList(object):
 
     def __update_partition_list(self):
         """
-        Return an updated copy of the partition list
-        
-        This includes allocating an extent and numbering for each Partition
-        object in the list. A copy of the partition list is made so that the
-        returned partition object is a copy of the stored Partition object
-        rather than a reference to it, thus leaving the partitions stored
-        in the list intact if modified after return.
+        Allocate extent and numbering for each Partition object in the list
+
+        A copy of the partition list is made so that any Partition object
+        returned from this list is a copy of a stored Partition object, thus
+        any partitions stored in the partition list remain intact even if a
+        copy is modified after is is returned.
         """
         part_list = deepcopy(self.__partition_list)
 
@@ -253,7 +240,7 @@ class PartitionList(object):
 
     def __len__(self):
         return len(self.__partition_list)
-    
+
     def __setitem__(self, i, value):
         """ Update the ith item in the list """
         self.append(partition)
@@ -276,7 +263,7 @@ class Partition(object):
 
     Optional attributes:
         format: A string describing the filesystem format for the
-                partition, or 'none' to skip filesystem creation
+                partition, or 'none' to create empty space.
         description: A string describing the partition, for documentation
         boot: Boolean string describing whether to set the bootable flag
         mountpoint: String describing the mountpoint for the partition
@@ -345,9 +332,9 @@ class Device(object):
         if self.size < self.min_start_bytes + 1:
             raise PartitioningError('Device size must be greater than %d '
                                     'bytes' % self.min_start_bytes)
-        
+
         # Get sector size
-        self.sector_size = self.getSectorSize(location)
+        self.sector_size = getSectorSize(location)
         self.location = location
 
         # Populate Device attributes from keyword args
@@ -393,8 +380,8 @@ class Device(object):
         """
         Populate parts with Partition objects from a list of attributes
 
-        @param partitions: List of partition attributes
-        @type partitions:  list
+        Parameters:
+            partitions - A list of partition attributes
         """
         self.partitionlist = PartitionList(self)
         if partitions:
@@ -418,17 +405,12 @@ class Device(object):
                                     (self.partition_table_format.upper(),
                                      self.max_allowed_partitions))
 
-    @staticmethod
     def commit(self):
-        """
-        Write the partition table to disk
+        """Write the partition table to the disk or image"""
 
-        @param device: A device object to perform the partitioning on
-        @type device:  Device
-        """
-        pt_format = device.partition_table_format.lower
+        pt_format = self.partition_table_format.lower()
         print("Creating %s partition table on %s" %
-                        (pt_format.upper(), device.location))
+                        (pt_format.upper(), self.location))
 
         # Create a new partition table
         if pt_format in ('mbr', 'dos'):
@@ -436,15 +418,15 @@ class Device(object):
         elif pt_format == 'gpt':
             cmd = "g\n"
 
-        for partition in device.parts:
+        for partition in self.partitionlist:
             # Create partitions
             if partition.fdisk_type != 'none':
                 cmd += "n\n"
                 if pt_format in ('mbr', 'dos'):
                     cmd += "p\n"
                 cmd += (str(partition.number) + "\n"
-                        "" + str(partition.start) + "\n"
-                        "" + str(partition.end) + "\n")
+                        "" + str(partition.extent.start) + "\n"
+                        "" + str(partition.extent.end) + "\n")
 
                 # Set partition types
                 cmd += "t\n"
@@ -456,62 +438,28 @@ class Device(object):
                 cmd += str(partition.fdisk_type) + "\n"
 
                 # Set bootable flag
-                if partition.boot:
-                    cmd += "a\n"
-                    if partition.number > 1:
-                        cmd += str(partition.number) + "\n"
+                if hasattr(partition, 'boot'):
+                    if partition.boot:
+                        cmd += "a\n"
+                        if partition.number > 1:
+                            cmd += str(partition.number) + "\n"
 
         # Write changes
         cmd += ("w\n"
                 "q\n")
-        p = subprocess.Popen(["fdisk", device.location],
+        p = subprocess.Popen(["fdisk", self.location],
                              stdin=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
         p.communicate(cmd)
 
+    def create_filesystems():
+        """Create filesystems on the device"""
+
+
     def __str__(self):
-        return '<Device: location=%s, size=%s>' % (self.location, self.size)
-
-
-def loadYAML(yamlFile):
-    '''
-    Load partition data from a yaml specification
-
-    The YAML file describes the attributes documented in the PartitionInfo
-    and Partition classes. A simple example might be:
-
-    @param yaml_file: Path to a YAML file to load
-    @type yaml_file:  str
-
-    @return Device
-    @rtype Device
-
-    '''
-    with open(yamlFile, 'r') as f:
-        kwargs = yaml.safe_load(f)
-    return Device(location, size, **kwargs)
-
-def getSectorSize(location):
-    """
-    Get the logical sector size of a device or image, in bytes
-    """
-    return int(__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
-                                       location))
-
-def getDiskSize(location):
-    """
-    Get the total size of a real block device or image, in bytes
-    """
-    return int(__filterFdiskListOutput('.*Disk.*?(\d+) bytes', location))
-
-def __filterFdiskListOutput(self, regex, location):
-    r = re.compile(regex, re.DOTALL)
-    m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
-    if m:
-        return m.group(1)
-    else:
-        raise PartitioningError('Error reading information from fdisk')
+        return ('<Device: location=%s, size=%s, partitions: %s>' %
+                (self.location, self.size, len(self.partitionlist)))
 
 
 class PartitioningError(Exception):
@@ -523,20 +471,84 @@ class PartitioningError(Exception):
         return self.msg
 
 
+def loadYAML(yamlFile):
+    """
+    Load partition data from a yaml specification
+
+    The YAML file describes the attributes documented in the Device
+    and Partition classes.
+
+    Parameters:
+        yaml_file - String path to a YAML file to load
+
+    Returns:
+        A Device object
+    """
+    with open(yamlFile, 'r') as f:
+        kwargs = yaml.safe_load(f)
+    return Device(location, size, **kwargs)
+
+
+def getSectorSize(location):
+    """Get the logical sector size of a device or image, in bytes"""
+    return int(__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
+                                       location))
+
+def getDiskSize(location):
+    """Get the total size of a real block device or image, in bytes"""
+    return int(__filterFdiskListOutput('.*Disk.*?(\d+) bytes', location))
+
+def __filterFdiskListOutput(regex, location):
+    r = re.compile(regex, re.DOTALL)
+    m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
+    if m:
+        return m.group(1)
+    else:
+        raise PartitioningError('Error reading information from fdisk')
+
+
+@contextlib.contextmanager
+def create_loopback(location, offset=0, size=0):
+    """
+    Create a loopback device for accessing block devices
+
+    Parameters:
+        offset - Offset of the start of a partition in bytes
+        size - Limits the size of the partition, in bytes
+    Returns:
+        The path to a created loopback device node
+    """
+
+    try:
+        if size and offset:
+            cmd = ['losetup', '--show', '-f', '-P', '-o', str(offset),
+                   '--sizelimit', str(size), location]
+        else:
+            cmd = ['losetup', '--show', '-f', '-P', '-o', str(offset),
+                    location]
+        device = subprocess.check_output(cmd).rstrip()
+        # Allow the system time to see the new device
+        # On some systems, mounts created on the loopdev
+        # too soon after creating the loopback device
+        # may be unreliable, even though the -P option
+        # (--partscan) is passed to losetup
+        time.sleep(1)
+    except BaseException:
+        sys.stderr.write('Error creating loopback')
+        raise
+    try:
+        yield device
+    finally:
+        subprocess.check_call(['losetup', '-d', device])
 
 
 
-def verifyDevice(self, device): # TODO sector size
-    ''' Calculate offsets, sizes, and numbering for each partition
 
-        This function takes a dict described by the YAML partition
-        specification and returns a modified dict with additional
-        information added to it, in order to fully describe the required
-        partition layout. It also checks for some potential issues in the
-        provided partition specification '''
 
-    raise ExtensionError('Partition numbering can\'t be '
-                         'overridden when using a GPT')
+
+
+
+def verifyDevice(device):
 
     # Size checks
     self.status(msg='Requested image size: %s bytes '
