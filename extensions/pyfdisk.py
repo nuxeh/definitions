@@ -105,17 +105,22 @@ class PartitionList(object):
     This class eases the calculation of partition sizes and numbering, as in
     these cases, the properties of a given partition depends on depends on
     each of the other partitions in the list.
+
+    Attributes:
+        device: A Device class containing the partition list
     """
 
     def __init__(self, device):
         """
         Initialisation function
 
-        Parameters:
-            device - A Device object
+        Args:
+            device: A Device object
         """
         self.device = device
         self.extent = device.extent
+
+        self.__cached_list_hash = 0
 
         self.__partition_list = []
         self.__iter_index = 0
@@ -170,14 +175,19 @@ class PartitionList(object):
         A copy of the partition list is made so that any Partition object
         returned from this list is a copy of a stored Partition object, thus
         any partitions stored in the partition list remain intact even if a
-        copy is modified after is is returned.
+        copy is modified after is is returned. Hashing is used to avoid
+        updating the list when the partition list has not changed.
         """
-        part_list = deepcopy(self.__partition_list)
+        current_list_hash = hash(str(self.__partition_list))
+        if current_list_hash == self.__cached_list_hash:
+            return self.__cached_list
 
+        self.__cached_list_hash = current_list_hash
+
+        part_list = deepcopy(self.__partition_list)
+        used_numbers = set()
         fill_partitions = set(partition for partition in part_list
                               if partition.size == 'fill')
-
-        used_numbers = set()
         requested_numbers = set(partition.number for partition in part_list
                                 if hasattr(partition, 'number'))
 
@@ -214,6 +224,7 @@ class PartitionList(object):
             part.number = num
             used_numbers.add(num)
 
+        self.__cached_list = part_list
         return part_list
 
     def get_length_sectors(self, size_bytes):
@@ -249,13 +260,13 @@ class Partition(object):
               one fill partition, unused space is divided equally between the
               fill partitions.
         fdisk_type: A number describing the hexadecimal code used by fdisk
-                    to describe the partition type
+                    to describe the partition type. Any partitions with
+                    fdisk_type='none' create an area of unused space.
 
     Optional attributes:
         **kwargs: A mapping of any keyword arguments
-        format: A string describing the filesystem format for the
-                partition. Any partitions with format='none' will be skipped
-                at partition table creation to create an area of unused space.
+        filesystem: A string describing the filesystem format for the
+                    partition, or 'none' to skip filesystem creation.
         description: A string describing the partition, for documentation
         boot: Boolean string describing whether to set the bootable flag
         mountpoint: String describing the mountpoint for the partition
@@ -263,12 +274,13 @@ class Partition(object):
                 partition (Possible only when using an MBR partition table)
     """
 
-    def __init__(self, size=0, fdisk_type=0x81, **kwargs):
+    def __init__(self, size=0, fdisk_type=0x81, filesystem='none', **kwargs):
         if not size and 'size' not in kwargs:
             raise PartitioningError('Partition must have a non-zero size')
-        self.__dict__.update(**kwargs)
+        self.filesystem = filesystem
         self.fdisk_type = fdisk_type
         self.size = size
+        self.__dict__.update(**kwargs)
 
     def compare(self, other):
         """Check for mutually exclusive attributes"""
@@ -279,13 +291,12 @@ class Partition(object):
                     return attrib
         return False
 
-    def __str__(self, header=False):
-        if header:
-            print 'Header'
+    def __str__(self):
         string = ('Partition\n'
                         '    size:       %s\n'
-                        '    fdisk type: %s'
-                   % (self.size, hex(self.fdisk_type)))
+                        '    fdisk type: %s\n'
+                        '    filesystem: %s'
+                   % (self.size, hex(self.fdisk_type), self.filesystem))
 
         if hasattr(self, 'extent'):
             string += (
@@ -318,7 +329,7 @@ class Device(object):
         partition_table_format: A string describing the type of partition
                                 table used on the device (default: 'gpt')
         partitions: A list of mappings for the attributes for each Partition
-                    object. updatePartitions() populates the partition list
+                    object. update_partitions() populates the partition list
                     based on the contents of this attribute.
     """
 
@@ -386,29 +397,29 @@ class Device(object):
         else:
             self.extent = Extent(start=start, end=disk_end_sector)
 
-        self.updatePartitions()
+        self.update_partitions()
 
-    def updatePartitions(self, partitions=None):
+    def update_partitions(self, partitions=None):
         """
         Populate parts with Partition objects from a list of attributes
 
-        Parameters:
-            partitions - A list of partition attributes
+        Args:
+            partitions: A list of partition attributes
         """
         self.partitionlist = PartitionList(self)
         if partitions:
             self.partitions = partitions
         if hasattr(self, 'partitions'):
             for partition_args in self.partitions:
-                self.addPartition(**partition_args)
+                self.add_partition(Partition(**partition_args))
 
-    def addPartition(self, **kwargs):
+    def add_partition(self, partition):
         """
-        Add a partition by a mapping of its attributes
+        Add a partition class to the device's list of partitions
 
-        See the Partition class for details of the available attributes
+        Args:
+            partition: a Partition class
         """
-        partition = Partition(**kwargs)
         if len(self.partitionlist) < self.max_allowed_partitions:
             self.partitionlist.append(partition)
         else:
@@ -464,19 +475,19 @@ class Device(object):
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
         output = p.communicate(cmd)
-        if 'Value out of range.' in output[1]:
-            raise PartitioningError('Device is too small')
+        if output[1]:
+            raise FdiskError(output[1])
 
     def create_filesystems(self):
         """Create filesystems on the device"""
         for part in self.partitionlist:
-            if part.format.lower() != 'none':
+            if part.filesystem.lower() != 'none':
                 with create_loopback(self.location,
                                      part.extent.start * self.sector_size,
                                      part.size) as device:
                     print ('Creating %s on partition %s' %
-                            (part.format, part.number))
-                    subprocess.check_call(['mkfs.' + part.format, device])
+                            (part.filesystem, part.number))
+                    subprocess.check_call(['mkfs.' + part.filesystem, device])
 
     def __str__(self):
         return ('<Device: location=%s, size=%s, partitions: %s>' %
@@ -484,6 +495,15 @@ class Device(object):
 
 
 class PartitioningError(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
+class FdiskError(Exception):
 
     def __init__(self, msg):
         self.msg = msg
