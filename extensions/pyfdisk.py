@@ -100,11 +100,11 @@ class Extent(object):
 
 class PartitionList(object):
     """
-    An iterable object for containing and processing a list Partition objects
+    An iterable object to contain and process a list of Partition objects
 
     This class eases the calculation of partition sizes and numbering, as in
-    these cases, the properties of a given partition depends on depends on
-    each of the other partitions in the list.
+    these cases, the properties of a given partition depends on each of the
+    other partitions in the list.
 
     Attributes:
         device: A Device class containing the partition list
@@ -443,7 +443,7 @@ class Device(object):
 
         for partition in self.partitionlist:
             # Create partitions
-            if partition.fdisk_type != 'none':
+            if partition.fdisk_type.lower() != 'none':
                 cmd += "n\n"
                 if pt_format in ('mbr', 'dos'):
                     cmd += "p\n"
@@ -479,13 +479,13 @@ class Device(object):
             raise FdiskError('"%s"' % output[1])
 
     def create_filesystems(self):
-        """Create filesystems on the device"""
+        """Create filesystems on the disk or image"""
         for part in self.partitionlist:
             if part.filesystem.lower() != 'none':
                 with create_loopback(self.location,
                                      part.extent.start * self.sector_size,
                                      part.size) as device:
-                    print ('Creating %s on partition %s' %
+                    print ('Creating %s filesystem on partition %s' %
                             (part.filesystem, part.number))
                     subprocess.check_call(['mkfs.' + part.filesystem, device])
 
