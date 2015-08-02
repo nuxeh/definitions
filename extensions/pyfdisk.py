@@ -284,7 +284,7 @@ class Partition(object):
 
     def compare(self, other):
         """Check for mutually exclusive attributes"""
-        non_duplicable = ['number', 'mountpoint']
+        non_duplicable = ('number', 'mountpoint')
         for attrib in non_duplicable:
             if hasattr(self, attrib) and hasattr(other, attrib):
                 if getattr(self, attrib) == getattr(other, attrib):
@@ -449,7 +449,7 @@ class Device(object):
                     cmd += "p\n"
                 cmd += (str(partition.number) + "\n"
                         "" + str(partition.extent.start) + "\n"
-                        "" + str(partition.extent.end) + "\n")
+                        "" + str(partition.extent.end+10) + "\n")
 
                 # Set partition types
                 cmd += "t\n"
@@ -476,7 +476,7 @@ class Device(object):
                              stdout=subprocess.PIPE)
         output = p.communicate(cmd)
         if output[1]:
-            raise FdiskError(output[1])
+            raise FdiskError('"%s"' % output[1])
 
     def create_filesystems(self):
         """Create filesystems on the device"""
