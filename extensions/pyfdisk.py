@@ -319,8 +319,9 @@ class Device(object):
 
     Required attributes:
         location: The location of the device or disk image
-        size: The size in bytes describing the total amount of space the
-              partition table on the device will occupy
+        size: A size in bytes describing the total amount of space the
+              partition table on the device will occupy, or 'fill' to
+              automatically fill the available space.
 
     Optional attributes:
         **kwargs: A mapping of any keyword arguments
@@ -342,7 +343,7 @@ class Device(object):
         if 'start_offset' not in kwargs:
             self.start_offset = 2048
 
-        target_size = getDiskSize(location)
+        target_size = get_disk_size(location)
         if size.lower() == 'fill':
             self.size = target_size
         else:
@@ -356,7 +357,7 @@ class Device(object):
                                     'bytes' % self.min_start_bytes)
 
         # Get sector size
-        self.sector_size = getSectorSize(location)
+        self.sector_size = get_sector_size(location)
         self.location = location
 
         # Populate Device attributes from keyword args
@@ -512,7 +513,7 @@ class FdiskError(Exception):
         return self.msg
 
 
-def loadYAML(yaml_file, location, size):
+def load_yaml(yaml_file, location, size):
     """
     Load partition data from a yaml specification
 
@@ -522,7 +523,8 @@ def loadYAML(yaml_file, location, size):
     Args:
         yaml_file: String path to a YAML file to load
         location: Path to the device node or image to use for partitioning
-        size: The size of the device node in bytes
+        size: The desired device size in bytes (may be 'fill' to occupy the
+              entire device
 
     Returns:
         A Device object
@@ -532,16 +534,16 @@ def loadYAML(yaml_file, location, size):
     return Device(location, size, **kwargs)
 
 
-def getSectorSize(location):
+def get_sector_size(location):
     """Get the logical sector size of a device or image, in bytes"""
-    return int(__filterFdiskListOutput('.*Sector size.*?(\d+) bytes',
+    return int(__filter_fdisk_list_output('.*Sector size.*?(\d+) bytes',
                                        location))
 
-def getDiskSize(location):
+def get_disk_size(location):
     """Get the total size of a real block device or image, in bytes"""
-    return int(__filterFdiskListOutput('.*Disk.*?(\d+) bytes', location))
+    return int(__filter_fdisk_list_output('.*Disk.*?(\d+) bytes', location))
 
-def __filterFdiskListOutput(regex, location):
+def __filter_fdisk_list_output(regex, location):
     r = re.compile(regex, re.DOTALL)
     m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
     if m:
@@ -582,38 +584,3 @@ def create_loopback(mount_path, offset=0, size=0):
         yield loop_device
     finally:
         subprocess.check_call(['losetup', '-d', loop_device])
-
-
-
-
-
-
-
-
-def verifyDevice(device):
-
-    # Size checks
-    self.status(msg='Requested image size: %s bytes '
-                    '(%d sectors of %d bytes)' %
-                    (last_sector * sector_size, last_sector, sector_size))
-
-    if last_sector > total_usable_sectors:
-        raise ExtensionError('Requested total size exceeds '
-                             'disk image size DISK_SIZE')
-
-    self.status(msg='Partition summary:')
-    for partition in partitions:
-        self.status(msg='Number:   %s' % str(partition['number']))
-        self.status(msg='  Start:  %s sectors' % str(partition['start']))
-        self.status(msg='  End:    %s sectors' % str(partition['end']))
-        self.status(msg='  Ftype:  %s' % str(partition['fdisk_type']))
-        self.status(msg='  Format: %s' % str(partition['format']))
-        self.status(msg='  Size:   %s bytes' % str(partition['size']))
-
-    # Sort the partitions by partition number
-    new_partitions = sorted(partitions, key=lambda partition:
-                            partition['number'])
-
-    new_partition_data = partition_data
-    new_partition_data['partitions'] = new_partitions
-    return new_partition_data
