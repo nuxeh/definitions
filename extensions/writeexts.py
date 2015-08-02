@@ -517,16 +517,18 @@ class WriteExtension(Extension):
             self.status(msg='%sing data to %s' % (act, target_dir))
         for filename in files:
             filepath = os.path.join(source_dir, filename)
-            subprocess.check_call([cmd, filepath, target_dir])
+            print '%s %s %s' % (cmd, filepath, target_dir)
+#           subprocess.check_call([cmd, filepath, target_dir])
 
     def empty_dir(self, directory):
-    '''Empty the contents of a directory, but not the directory itself'''
+        '''Empty the contents of a directory, but not the directory itself'''
         files = []
         if os.path.exists(directory):
             files = os.listdir(directory)
         for filename in files:
             filepath = os.path.join(directory, filename)
-            subprocess.check_call(['rm', '-rf', filepath])
+            print 'rm -rf %s ' % filepath
+#           subprocess.check_call(['rm', '-rf', filepath])
 
     def complete_fstab_for_btrfs_layout(self, system_dir,
                                         rootfs_uuid=None, device=None):
@@ -575,13 +577,13 @@ class WriteExtension(Extension):
                                                   part.extent.start *
                                                   device.sector_size)
                         self.status(msg='Adding fstab entry for %s '
-                                        'partition', part.mountpoint)
+                                        'partition' % part.mountpoint)
                         fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
                                        '0 2' % (part_uuid, part.mountpoint,
                                                 part.filesystem))
                     else:
                         self.status(msg='WARNING: an entry already exists in '
-                                        'fstab for %s partition, skipping',
+                                        'fstab for %s partition, skipping' %
                                         part.mountpoint)
 
         fstab.write()

@@ -344,7 +344,7 @@ class Device(object):
             self.start_offset = 2048
 
         target_size = get_disk_size(location)
-        if size.lower() == 'fill':
+        if str(size).lower() == 'fill':
             self.size = target_size
         else:
             self.size = size
@@ -431,7 +431,7 @@ class Device(object):
 
     def commit(self):
         """Write the partition table to the disk or image"""
-
+#       time.sleep(20)
         pt_format = self.partition_table_format.lower()
         print("Creating %s partition table on %s" %
                         (pt_format.upper(), self.location))
@@ -444,13 +444,13 @@ class Device(object):
 
         for partition in self.partitionlist:
             # Create partitions
-            if partition.fdisk_type.lower() != 'none':
+            if str(partition.fdisk_type).lower() != 'none':
                 cmd += "n\n"
                 if pt_format in ('mbr', 'dos'):
                     cmd += "p\n"
                 cmd += (str(partition.number) + "\n"
                         "" + str(partition.extent.start) + "\n"
-                        "" + str(partition.extent.end+10) + "\n")
+                        "" + str(partition.extent.end) + "\n")
 
                 # Set partition types
                 cmd += "t\n"
@@ -475,9 +475,12 @@ class Device(object):
                              stdin=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
-        output = p.communicate(cmd)
-        if output[1]:
-            raise FdiskError('"%s"' % output[1])
+        print cmd
+        try:
+            output = p.communicate(cmd)
+        except CalledProcessError:
+            if output[1]:
+                raise FdiskError('"%s"' % output[1])
 
     def create_filesystems(self):
         """Create filesystems on the disk or image"""

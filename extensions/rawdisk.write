@@ -17,6 +17,7 @@
 '''A Morph deployment write extension for raw disk images.'''
 
 
+import contextlib
 import os
 import pyfdisk
 import subprocess
@@ -124,7 +125,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 
         # Create partition table
         dev = pyfdisk.load_yaml(part_spec, location, disk_size)
-        self.status(msg='Loaded partition specification from %s', part_spec)
+        self.status(msg='Loaded partition specification from %s' % part_spec)
         self.status(msg=str(dev.partitionlist))
 
         dev.commit()
@@ -148,10 +149,12 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                      '\'%s\' partition in the partition '
                                      'specification' % part.mountpoint)
             with self.mount_partition(part, dev) as part_mount_dir:
-                if part.mountpoint = '/'
+                if part.mountpoint == '/':
                     root_uuid = self.get_uuid(location, part.extent.start *
                                               dev.sector_size)
-                    self.create_btrfs_system_layout(temp_root, mountpoint,
+                    # TODO: reformat btrfs
+                    self.create_btrfs_system_layout(temp_root,
+                                                    part.mountpoint,
                                                     'factory', root_uuid, dev)
                 else:
                     # Copy files to partition from unpacked rootfs
@@ -160,9 +163,10 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                     self.move_or_copy_files(src_dir, mountpoint, copy=True)
 
 
-    @contextmanager
+    @contextlib.contextmanager
     def mount_partition(self, partition, device):
-        with pyfdisk.create_loopback(location, offset=(partition.extent.start
+        with pyfdisk.create_loopback(device.location,
+                                     offset=(partition.extent.start
                                      * device.sector_size)) as loop_device:
             with self.mount(loop_device) as mountpoint:
                 yield mountpoint
