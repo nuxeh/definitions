@@ -122,36 +122,43 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         if not disk_size:
             raise ExtensionError('DISK_SIZE is not defined')
 
-        self.status(msg='Loading partition specification from %s', part_spec)
-
         # Create partition table
-        dev = pyfdisk.loadYAML(part_spec, location, disk_size)
+        dev = pyfdisk.load_yaml(part_spec, location, disk_size)
+        self.status(msg='Loaded partition specification from %s', part_spec)
         self.status(msg=str(dev.partitionlist))
+
         dev.commit()
         dev.create_filesystems()
 
         mountpoints = set(part.mountpoint for part in dev.partitionlist)
+        if '/' not in mountpoints:
+            raise ExtensionError('No partition with root mountpoint, please '
+                                 'specify a partition with \'mountpoint: /\' '
+                                 'in the partition specification')
         print mountpoints
 
-        # Create root filesystem, and copy files to partitions
-        for part in dev.partitionlist:
-            with self.mount_partition(part, dev) as part_mount_dir:
-                if hasattr(part, 'mountpoint':
-                    bare_mountpoint = re.sub('^/', '', partition)
-                    if part.mountpoint = '/'
-                        self.create_btrfs_system_layout(temp_root, )
-                        # Delete contents of partition mountpoints in the rootfs
-                    else:
-                        existing_part_dir = os.path.join(system_dir,
-                        # Copy files to partition
+        mounted_partitions = set(part for part in dev.partitionlist
+                                 if hasattr(part, 'mountpoint'))
 
-                        if not os.path.exists(existing_part_dir):
-                            self.status(msg='Creating empty mountpoint for %s partition' %
-                                             partition)
-                            os.mkdir(existing_part_dir)
-                        else:
-                            self.status(msg='Moving files to %s partition' % partition)
-                            self.move_files(existing_part_dir, partition_mount)
+        # Create root filesystem, and copy files to partitions
+        for part in mounted_partitions:
+            if not hasattr(part, 'filesystem'):
+                raise ExtensionError('Cannot mount a partition without '
+                                     'filesystem, please specify one for '
+                                     '\'%s\' partition in the partition '
+                                     'specification' % part.mountpoint)
+            with self.mount_partition(part, dev) as part_mount_dir:
+                if part.mountpoint = '/'
+                    root_uuid = self.get_uuid(location, part.extent.start *
+                                              dev.sector_size)
+                    self.create_btrfs_system_layout(temp_root, mountpoint,
+                                                    'factory', root_uuid, dev)
+                else:
+                    # Copy files to partition from unpacked rootfs
+                    src_dir = os.path.join(temp_root,
+                                           re.sub('^/', '', part.mountpoint))
+                    self.move_or_copy_files(src_dir, mountpoint, copy=True)
+
 
     @contextmanager
     def mount_partition(self, partition, device):
