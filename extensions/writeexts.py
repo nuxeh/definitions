@@ -414,7 +414,7 @@ class WriteExtension(Extension):
             os.rmdir(mount_point)
 
     def create_btrfs_system_layout(self, temp_root, mountpoint, version_label,
-                                   disk_uuid):
+                                   disk_uuid, device=None):
         '''Separate base OS versions from state using subvolumes.
 
         '''
@@ -429,7 +429,7 @@ class WriteExtension(Extension):
         system_dir = os.path.join(version_root, 'orig')
 
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
-                                                          disk_uuid)
+                                                          disk_uuid, device)
 
         for state_dir in state_dirs:
             self.create_state_subvolume(system_dir, mountpoint, state_dir)
@@ -450,6 +450,20 @@ class WriteExtension(Extension):
             else:
                 self.generate_bootloader_config(mountpoint)
             self.install_bootloader(mountpoint)
+
+        # Delete contents of partition mountpoints in the rootfs,
+        # or create an empty mount directory in the rootfs
+        if device:
+            for part in device.partitionlist:
+                if hasattr(part, 'mountpoint'):
+                    part_mount_dir = os.path.join(mountpoint,
+                                         re.sub('^/', '', part.mountpoint))
+                    if os.path.exists(part_mount_dir):
+                       self.empty_dir(part_mount_dir)
+                    else:
+                        self.status(msg='Creating empty mount directory '
+                                        'for %s partition' % partition)
+                        os.mkdir(part_mount_dir)
 
     def create_orig(self, version_root, temp_root):
         '''Create the default "factory" system.'''
@@ -500,12 +514,22 @@ class WriteExtension(Extension):
         if os.path.exists(source_dir):
             files = os.listdir(source_dir)
         if len(files) > 0:
-            self.status(msg='%sing existing data to %s' % (act, target_dir))
+            self.status(msg='%sing data to %s' % (act, target_dir))
         for filename in files:
             filepath = os.path.join(source_dir, filename)
             subprocess.check_call([cmd, filepath, target_dir])
 
-    def complete_fstab_for_btrfs_layout(self, system_dir, rootfs_uuid=None):
+    def empty_dir(self, directory):
+    '''Empty the contents of a directory, but not the directory itself'''
+        files = []
+        if os.path.exists(directory):
+            files = os.listdir(directory)
+        for filename in files:
+            filepath = os.path.join(directory, filename)
+            subprocess.check_call(['rm', '-rf', filepath])
+
+    def complete_fstab_for_btrfs_layout(self, system_dir,
+                                        rootfs_uuid=None, device=None):
         '''Fill in /etc/fstab entries for the default Btrfs disk layout.
 
         In the future we should move this code out of the write extension and
@@ -541,6 +565,24 @@ class WriteExtension(Extension):
                 fstab.add_line(
                         '%s  /%s  btrfs subvol=%s,defaults,rw,noatime 0 2' %
                         (root_device, state_dir, state_subvol))
+
+        # Add fstab entries for partitions
+        if device:
+            for part in device.partitionlist:
+                if hasattr(part, 'mountpoint') and part.mountpoint != '/':
+                    if part.mountpoint not in existing_mounts:
+                        part_uuid = self.get_uuid(device.location,
+                                                  part.extent.start *
+                                                  device.sector_size)
+                        self.status(msg='Adding fstab entry for %s '
+                                        'partition', part.mountpoint)
+                        fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
+                                       '0 2' % (part_uuid, part.mountpoint,
+                                                part.filesystem))
+                    else:
+                        self.status(msg='WARNING: an entry already exists in '
+                                        'fstab for %s partition, skipping',
+                                        part.mountpoint)
 
         fstab.write()
         return state_dirs_to_create
