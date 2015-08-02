@@ -18,6 +18,7 @@
 
 
 import os
+import pyfdisk
 import subprocess
 import sys
 import time
@@ -38,19 +39,19 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         temp_root, location = args
         upgrade = self.get_environment_boolean('UPGRADE')
 
+        part_spec = os.environ.get('PARTITION_FILE', 'partitioning/default')
+
         if upgrade:
             self.upgrade_local_system(location, temp_root)
         else:
             try:
                 if not self.is_device(location):
                     with self.created_disk_image(location):
-                        self.format_btrfs(location)
-                        self.create_system(temp_root, location)
+                        self.do_partitioning(location, temp_root, part_spec)
                     self.status(msg='Disk image has been created at %s' %
                                      location)
                 else:
-                    self.format_btrfs(location)
-                    self.create_system(temp_root, location)
+                    self.do_partitioning(location, temp_root, part_spec)
                     self.status(msg='System deployed to %s' % location)
             except Exception:
                 self.status(msg='Failure to deploy system to %s' %
@@ -105,5 +106,58 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 
         return version_label
 
+    def do_partitioning(self, location, temp_root, part_spec):
+        '''Perform partitioning
+
+        Perform partitioning using the pyfdisk.py module. Documentation
+        for this, and guidance on how to create a partition specification can
+        be found in extensions/pyfdisk.README
+
+        Args:
+            location: Path to the target device or image
+            temp_root: Location of the unpacked Baserock rootfs
+            part_spec: Path to a YAML formatted partition specification
+        '''
+        disk_size = self.get_disk_size()
+        if not disk_size:
+            raise ExtensionError('DISK_SIZE is not defined')
+
+        self.status(msg='Loading partition specification from %s', part_spec)
+
+        # Create partition table
+        dev = pyfdisk.loadYAML(part_spec, location, disk_size)
+        self.status(msg=str(dev.partitionlist))
+        dev.commit()
+        dev.create_filesystems()
+
+        mountpoints = set(part.mountpoint for part in dev.partitionlist)
+        print mountpoints
+
+        # Create root filesystem, and copy files to partitions
+        for part in dev.partitionlist:
+            with self.mount_partition(part, dev) as part_mount_dir:
+                if hasattr(part, 'mountpoint':
+                    bare_mountpoint = re.sub('^/', '', partition)
+                    if part.mountpoint = '/'
+                        self.create_btrfs_system_layout(temp_root, )
+                        # Delete contents of partition mountpoints in the rootfs
+                    else:
+                        existing_part_dir = os.path.join(system_dir,
+                        # Copy files to partition
+
+                        if not os.path.exists(existing_part_dir):
+                            self.status(msg='Creating empty mountpoint for %s partition' %
+                                             partition)
+                            os.mkdir(existing_part_dir)
+                        else:
+                            self.status(msg='Moving files to %s partition' % partition)
+                            self.move_files(existing_part_dir, partition_mount)
+
+    @contextmanager
+    def mount_partition(self, partition, device):
+        with pyfdisk.create_loopback(location, offset=(partition.extent.start
+                                     * device.sector_size)) as loop_device:
+            with self.mount(loop_device) as mountpoint:
+                yield mountpoint
 
 RawDiskWriteExtension().run()
