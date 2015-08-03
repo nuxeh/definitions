@@ -20,6 +20,7 @@
 import contextlib
 import os
 import pyfdisk
+import re
 import subprocess
 import sys
 import time
@@ -129,14 +130,13 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         self.status(msg=str(dev.partitionlist))
 
         dev.commit()
-        dev.create_filesystems()
+        dev.create_filesystems(skip=['/'])
 
         mountpoints = set(part.mountpoint for part in dev.partitionlist)
         if '/' not in mountpoints:
             raise ExtensionError('No partition with root mountpoint, please '
                                  'specify a partition with \'mountpoint: /\' '
                                  'in the partition specification')
-        print mountpoints
 
         mounted_partitions = set(part for part in dev.partitionlist
                                  if hasattr(part, 'mountpoint'))
@@ -148,23 +148,29 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                      'filesystem, please specify one for '
                                      '\'%s\' partition in the partition '
                                      'specification' % part.mountpoint)
+            if part.mountpoint == '/':
+                # Re-format the rootfs, to include needed extra features
+                with pyfdisk.create_loopback(location,
+                                             offset=part.extent.start *
+                                             dev.sector_size) as lpb:
+                    self.mkfs_btrfs(lpb)
             with self.mount_partition(part, dev) as part_mount_dir:
                 if part.mountpoint == '/':
                     root_uuid = self.get_uuid(location, part.extent.start *
                                               dev.sector_size)
-                    # TODO: reformat btrfs
                     self.create_btrfs_system_layout(temp_root,
-                                                    part.mountpoint,
+                                                    part_mount_dir,
                                                     'factory', root_uuid, dev)
                 else:
                     # Copy files to partition from unpacked rootfs
                     src_dir = os.path.join(temp_root,
                                            re.sub('^/', '', part.mountpoint))
-                    self.move_or_copy_files(src_dir, mountpoint, copy=True)
+                    self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
 
     @contextlib.contextmanager
     def mount_partition(self, partition, device):
+        self.status(msg='Mounting partition %d' % partition.number)
         with pyfdisk.create_loopback(device.location,
                                      offset=(partition.extent.start
                                      * device.sector_size)) as loop_device:

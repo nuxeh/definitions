@@ -425,7 +425,7 @@ class WriteExtension(Extension):
         os.makedirs(version_root)
         os.makedirs(state_root)
 
-        self.create_orig(version_root, temp_root)
+#       self.create_orig(version_root, temp_root)
         system_dir = os.path.join(version_root, 'orig')
 
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
@@ -455,7 +455,7 @@ class WriteExtension(Extension):
         # or create an empty mount directory in the rootfs
         if device:
             for part in device.partitionlist:
-                if hasattr(part, 'mountpoint'):
+                if hasattr(part, 'mountpoint') and part.mountpoint != '/':
                     part_mount_dir = os.path.join(mountpoint,
                                          re.sub('^/', '', part.mountpoint))
                     if os.path.exists(part_mount_dir):
@@ -551,6 +551,7 @@ class WriteExtension(Extension):
 
         fstab = Fstab(os.path.join(system_dir, 'etc', 'fstab'))
         existing_mounts = fstab.get_mounts()
+        print existing_mounts
 
         if '/' in existing_mounts:
             root_device = existing_mounts['/']
@@ -559,32 +560,39 @@ class WriteExtension(Extension):
                            'UUID=%s' % rootfs_uuid)
             fstab.add_line('%s  / btrfs defaults,rw,noatime 0 1' % root_device)
 
+        # Add fstab entries for partitions
+        partition_mounts = set()
+        if device:
+            mount_parts = set(p for p in device.partitionlist
+                          if hasattr(p, 'mountpoint') and p.mountpoint != '/')
+            part_mountpoints = set(p.mountpoint for p in mount_parts)
+            for part in mount_parts:
+                if part.mountpoint not in existing_mounts:
+                    time.sleep(20)
+                    part_uuid = self.get_uuid(device.location,
+                                              part.extent.start *
+                                              device.sector_size)
+                    # TODO remove
+                    self.status(msg='Adding fstab entry for %s '
+                                    'partition' % part.mountpoint)
+                    fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
+                                   '0 2' % (part_uuid, part.mountpoint,
+                                            part.filesystem))
+                else:
+                    self.status(msg='WARNING: an entry already exists in '
+                                    'fstab for %s partition, skipping' %
+                                    part.mountpoint)
+
+        # Add entries for state dirs
         state_dirs_to_create = set()
         for state_dir in shared_state_dirs:
-            if '/' + state_dir not in existing_mounts:
+            mp = '/' + state_dir
+            if mp not in existing_mounts and mp not in part_mountpoints:
                 state_dirs_to_create.add(state_dir)
                 state_subvol = os.path.join('/state', state_dir)
                 fstab.add_line(
                         '%s  /%s  btrfs subvol=%s,defaults,rw,noatime 0 2' %
                         (root_device, state_dir, state_subvol))
-
-        # Add fstab entries for partitions
-        if device:
-            for part in device.partitionlist:
-                if hasattr(part, 'mountpoint') and part.mountpoint != '/':
-                    if part.mountpoint not in existing_mounts:
-                        part_uuid = self.get_uuid(device.location,
-                                                  part.extent.start *
-                                                  device.sector_size)
-                        self.status(msg='Adding fstab entry for %s '
-                                        'partition' % part.mountpoint)
-                        fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
-                                       '0 2' % (part_uuid, part.mountpoint,
-                                                part.filesystem))
-                    else:
-                        self.status(msg='WARNING: an entry already exists in '
-                                        'fstab for %s partition, skipping' %
-                                        part.mountpoint)
 
         fstab.write()
         return state_dirs_to_create

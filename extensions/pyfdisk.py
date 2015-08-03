@@ -306,6 +306,9 @@ class Partition(object):
         if hasattr(self, 'number'):
             string += '\n    number:     %s' % self.number
 
+        if hasattr(self, 'mountpoint'):
+            string += '\n    mountpoint: %s' % self.mountpoint
+
         return string
 
 
@@ -431,7 +434,6 @@ class Device(object):
 
     def commit(self):
         """Write the partition table to the disk or image"""
-#       time.sleep(20)
         pt_format = self.partition_table_format.lower()
         print("Creating %s partition table on %s" %
                         (pt_format.upper(), self.location))
@@ -475,16 +477,27 @@ class Device(object):
                              stdin=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
-        print cmd
-        try:
-            output = p.communicate(cmd)
-        except CalledProcessError:
-            if output[1]:
-                raise FdiskError('"%s"' % output[1])
+        output = p.communicate(cmd)
 
-    def create_filesystems(self):
-        """Create filesystems on the disk or image"""
+        errors = output[1].split('\n')[1:-1]
+        if errors:
+            # Note that the message saying 'disk does not contain a valid
+            # partition table' is never an error, it's a status message
+            # printed to stderr when fdisk starts with a blank device.
+            # Exception handling is done like this since fdisk will not
+            # return a failure exit code if it finds problems with the input
+            raise FdiskError('"%s"' % ' '.join(str(x) for x in errors))
+
+    def create_filesystems(self, skip=None):
+        """Create filesystems on the disk or image
+        
+        Args:
+            skipping: A list of strings denoting partitions to skip filesystem
+            creation on, for example if custom settings are required
+        """
         for part in self.partitionlist:
+            if part.mountpoint in skip:
+                continue
             if part.filesystem.lower() != 'none':
                 with create_loopback(self.location,
                                      part.extent.start * self.sector_size,
