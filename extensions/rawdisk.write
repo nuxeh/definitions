@@ -132,6 +132,11 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         dev.commit()
         dev.create_filesystems(skip=['/'])
 
+        # FIXME: GPT currently not supported due to missing tools
+        if dev.partition_table_format.lower() == 'gpt':
+            raise ExtensionError('GPT partition tables are not currently
+                                  supported')
+
         mountpoints = set(part.mountpoint for part in dev.partitionlist)
         if '/' not in mountpoints:
             raise ExtensionError('No partition with root mountpoint, please '

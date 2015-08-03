@@ -425,9 +425,7 @@ class WriteExtension(Extension):
         os.makedirs(version_root)
         os.makedirs(state_root)
 
-        self.create_orig(version_root, temp_root)
-        system_dir = os.path.join(version_root, 'orig')
-
+        system_dir = self.create_orig(version_root, temp_root)
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
                                                           disk_uuid, device)
 
@@ -449,17 +447,18 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint, disk_uuid)
             else:
                 self.generate_bootloader_config(mountpoint)
-            self.install_bootloader(mountpoint)
+            self.install_bootloader(mountpoint, system_dir, location)
 
-        # Delete contents of partition mountpoints in the rootfs,
-        # or create an empty mount directory in the rootfs
+        # Delete contents of partition mountpoints in the rootfs to leave an
+        # empty mount drectory (files are copied to the actual partition
+        # separately), or create an empty mount directory in the rootfs.
         if device:
             for part in device.partitionlist:
                 if hasattr(part, 'mountpoint') and part.mountpoint != '/':
-                    part_mount_dir = os.path.join(mountpoint,
+                    part_mount_dir = os.path.join(system_dir,
                                          re.sub('^/', '', part.mountpoint))
                     if os.path.exists(part_mount_dir):
-                       self.empty_dir(part_mount_dir)
+                        self.empty_dir(part_mount_dir)
                     else:
                         self.status(msg='Creating empty mount directory '
                                         'for %s partition' % part.mountpoint)
@@ -474,6 +473,8 @@ class WriteExtension(Extension):
         subprocess.check_call(['btrfs', 'subvolume', 'create', orig])
         self.status(msg='Copying files to orig subvolume')
         subprocess.check_call(['cp', '-a', temp_root + '/.', orig + '/.'])
+
+        return orig
 
     def create_run(self, version_root):
         '''Create the 'run' snapshot.'''
@@ -527,8 +528,7 @@ class WriteExtension(Extension):
             files = os.listdir(directory)
         for filename in files:
             filepath = os.path.join(directory, filename)
-            print 'rm -rf %s ' % filepath
-#           subprocess.check_call(['rm', '-rf', filepath])
+            subprocess.check_call(['rm', '-rf', filepath])
 
     def complete_fstab_for_btrfs_layout(self, system_dir,
                                         rootfs_uuid=None, device=None):
@@ -551,7 +551,6 @@ class WriteExtension(Extension):
 
         fstab = Fstab(os.path.join(system_dir, 'etc', 'fstab'))
         existing_mounts = fstab.get_mounts()
-        print existing_mounts
 
         if '/' in existing_mounts:
             root_device = existing_mounts['/']
@@ -568,12 +567,9 @@ class WriteExtension(Extension):
             part_mountpoints = set(p.mountpoint for p in mount_parts)
             for part in mount_parts:
                 if part.mountpoint not in existing_mounts:
-#                   time.sleep(20)
                     part_uuid = self.get_uuid(device.location,
                                               part.extent.start *
                                               device.sector_size)
-                    part_uuid = 'cheese'
-                    # TODO remove
                     self.status(msg='Adding fstab entry for %s '
                                     'partition' % part.mountpoint)
                     fstab.add_line('UUID=%s  %s %s defaults,rw,noatime '
@@ -711,21 +707,33 @@ class WriteExtension(Extension):
                 f.write('devicetree /systems/default/dtb\n')
             f.write('append %s\n' % kernel_args)
 
-    def install_bootloader(self, real_root):
+    def install_bootloader(self, *args):
         install_function_dict = {
             'extlinux': self.install_bootloader_extlinux,
         }
 
         install_type = self.get_bootloader_install()
         if install_type in install_function_dict:
-            install_function_dict[install_type](real_root)
+            install_function_dict[install_type](*args)
         elif install_type != 'none':
             raise ExtensionError(
                 'Invalid BOOTLOADER_INSTALL %s' % install_type)
 
-    def install_bootloader_extlinux(self, real_root):
+    def install_bootloader_extlinux(self, real_root, orig_root, location):
         self.status(msg='Installing extlinux')
         subprocess.check_call(['extlinux', '--install', real_root])
+
+        # Install Syslinux MBR
+        self.status(msg='Installing syslinux MBR blob')
+        mbr_blob_location = os.path.join(orig_root,
+                            'usr/share/syslinux/mbr.bin')
+        print mbr_blob_location
+        print ['dd', 'if=%' % mbr_blob_location,
+                                    'of=%s' % location, 'bs=440', 'count=1']
+        subprocess.check_call(['ls', '-l', mbr_blob_location])
+#       subprocess.check_call['dd', 'if=%' % mbr_blob_location,
+#                                   'of=%s' % location, 'bs=440', 'count=1']
+
 
         # FIXME this hack seems to be necessary to let extlinux finish
         subprocess.check_call(['sync'])
