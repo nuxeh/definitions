@@ -425,7 +425,7 @@ class WriteExtension(Extension):
         os.makedirs(version_root)
         os.makedirs(state_root)
 
-#       self.create_orig(version_root, temp_root)
+        self.create_orig(version_root, temp_root)
         system_dir = os.path.join(version_root, 'orig')
 
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
@@ -462,7 +462,7 @@ class WriteExtension(Extension):
                        self.empty_dir(part_mount_dir)
                     else:
                         self.status(msg='Creating empty mount directory '
-                                        'for %s partition' % partition)
+                                        'for %s partition' % part.mountpoint)
                         os.mkdir(part_mount_dir)
 
     def create_orig(self, version_root, temp_root):
@@ -517,8 +517,8 @@ class WriteExtension(Extension):
             self.status(msg='%sing data to %s' % (act, target_dir))
         for filename in files:
             filepath = os.path.join(source_dir, filename)
-            print '%s %s %s' % (cmd, filepath, target_dir)
-#           subprocess.check_call([cmd, filepath, target_dir])
+#           print '%s %s %s' % (cmd, filepath, target_dir)
+            subprocess.check_call([cmd, filepath, target_dir])
 
     def empty_dir(self, directory):
         '''Empty the contents of a directory, but not the directory itself'''
@@ -568,10 +568,11 @@ class WriteExtension(Extension):
             part_mountpoints = set(p.mountpoint for p in mount_parts)
             for part in mount_parts:
                 if part.mountpoint not in existing_mounts:
-                    time.sleep(20)
+#                   time.sleep(20)
                     part_uuid = self.get_uuid(device.location,
                                               part.extent.start *
                                               device.sector_size)
+                    part_uuid = 'cheese'
                     # TODO remove
                     self.status(msg='Adding fstab entry for %s '
                                     'partition' % part.mountpoint)

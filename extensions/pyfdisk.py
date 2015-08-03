@@ -504,6 +504,7 @@ class Device(object):
                                      part.size) as device:
                     print ('Creating %s filesystem on partition %s' %
                             (part.filesystem, part.number))
+                    # TODO: check output
                     subprocess.check_call(['mkfs.' + part.filesystem, device])
 
     def __str__(self):
@@ -584,6 +585,8 @@ def create_loopback(mount_path, offset=0, size=0):
     try:
         base_args = ['losetup', '--show', '-f', '-P', '-o', str(offset)]
         if size and offset:
+            print size
+            print offset
             cmd = base_args + ['--sizelimit', str(size), mount_path]
         else:
             cmd = base_args + [mount_path]

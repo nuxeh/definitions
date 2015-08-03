@@ -151,9 +151,9 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             if part.mountpoint == '/':
                 # Re-format the rootfs, to include needed extra features
                 with pyfdisk.create_loopback(location,
-                                             offset=part.extent.start *
-                                             dev.sector_size) as lpb:
-                    self.mkfs_btrfs(lpb)
+                                             part.extent.start *
+                                             dev.sector_size, part.size) as l:
+                    self.mkfs_btrfs(l)
             with self.mount_partition(part, dev) as part_mount_dir:
                 if part.mountpoint == '/':
                     root_uuid = self.get_uuid(location, part.extent.start *
