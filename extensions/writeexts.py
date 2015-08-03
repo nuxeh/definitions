@@ -414,7 +414,7 @@ class WriteExtension(Extension):
             os.rmdir(mount_point)
 
     def create_btrfs_system_layout(self, temp_root, mountpoint, version_label,
-                                   disk_uuid, device=None):
+                                   disk_uuid, device):
         '''Separate base OS versions from state using subvolumes.
 
         '''
@@ -447,22 +447,21 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint, disk_uuid)
             else:
                 self.generate_bootloader_config(mountpoint)
-            self.install_bootloader(mountpoint, system_dir, location)
+            self.install_bootloader(mountpoint, system_dir, device.location)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
         # empty mount drectory (files are copied to the actual partition
         # separately), or create an empty mount directory in the rootfs.
-        if device:
-            for part in device.partitionlist:
-                if hasattr(part, 'mountpoint') and part.mountpoint != '/':
-                    part_mount_dir = os.path.join(system_dir,
-                                         re.sub('^/', '', part.mountpoint))
-                    if os.path.exists(part_mount_dir):
-                        self.empty_dir(part_mount_dir)
-                    else:
-                        self.status(msg='Creating empty mount directory '
-                                        'for %s partition' % part.mountpoint)
-                        os.mkdir(part_mount_dir)
+        for part in device.partitionlist:
+            if hasattr(part, 'mountpoint') and part.mountpoint != '/':
+                part_mount_dir = os.path.join(system_dir,
+                                     re.sub('^/', '', part.mountpoint))
+                if os.path.exists(part_mount_dir):
+                    self.empty_dir(part_mount_dir)
+                else:
+                    self.status(msg='Creating empty mount directory '
+                                    'for %s partition' % part.mountpoint)
+                    os.mkdir(part_mount_dir)
 
     def create_orig(self, version_root, temp_root):
         '''Create the default "factory" system.'''
@@ -518,7 +517,6 @@ class WriteExtension(Extension):
             self.status(msg='%sing data to %s' % (act, target_dir))
         for filename in files:
             filepath = os.path.join(source_dir, filename)
-#           print '%s %s %s' % (cmd, filepath, target_dir)
             subprocess.check_call([cmd, filepath, target_dir])
 
     def empty_dir(self, directory):
@@ -723,21 +721,17 @@ class WriteExtension(Extension):
         self.status(msg='Installing extlinux')
         subprocess.check_call(['extlinux', '--install', real_root])
 
+        # FIXME this hack seems to be necessary to let extlinux finish
+        subprocess.check_call(['sync'])
+        time.sleep(2)
+
         # Install Syslinux MBR blob
         self.status(msg='Installing syslinux MBR blob')
         mbr_blob_location = os.path.join(orig_root,
                             'usr/share/syslinux/mbr.bin')
-        print mbr_blob_location
-        print ['dd', 'if=%' % mbr_blob_location,
-                                    'of=%s' % location, 'bs=440', 'count=1']
-        subprocess.check_call(['ls', '-l', mbr_blob_location])
-#       subprocess.check_call['dd', 'if=%' % mbr_blob_location,
-#                                   'of=%s' % location, 'bs=440', 'count=1']
-
-
-        # FIXME this hack seems to be necessary to let extlinux finish
-        subprocess.check_call(['sync'])
-        time.sleep(2)
+        subprocess.check_call(['dd', 'if=%s' % mbr_blob_location,
+                                     'of=%s' % location,
+                                     'bs=440', 'count=1', 'conv=notrunc'])
 
     def install_syslinux_menu(self, real_root, version_root):
         '''Make syslinux/extlinux menu binary available.

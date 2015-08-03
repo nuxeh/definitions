@@ -297,7 +297,6 @@ class Partition(object):
                         '    fdisk type: %s\n'
                         '    filesystem: %s'
                    % (self.size, hex(self.fdisk_type), self.filesystem))
-
         if hasattr(self, 'extent'):
             string += (
                       '\n    start:      %s'
@@ -305,9 +304,10 @@ class Partition(object):
                         % (self.extent.start, self.extent.end))
         if hasattr(self, 'number'):
             string += '\n    number:     %s' % self.number
-
         if hasattr(self, 'mountpoint'):
             string += '\n    mountpoint: %s' % self.mountpoint
+        if hasattr(self, 'boot'):
+            string += '\n    bootable:   %s' % self.boot
 
         return string
 
@@ -465,7 +465,7 @@ class Device(object):
 
                 # Set bootable flag
                 if hasattr(partition, 'boot'):
-                    if partition.boot:
+                    if str(partition.boot).lower() in ('yes', 'true'):
                         cmd += "a\n"
                         if partition.number > 1:
                             cmd += str(partition.number) + "\n"
