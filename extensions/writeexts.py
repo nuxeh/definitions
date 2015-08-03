@@ -723,7 +723,7 @@ class WriteExtension(Extension):
         self.status(msg='Installing extlinux')
         subprocess.check_call(['extlinux', '--install', real_root])
 
-        # Install Syslinux MBR
+        # Install Syslinux MBR blob
         self.status(msg='Installing syslinux MBR blob')
         mbr_blob_location = os.path.join(orig_root,
                             'usr/share/syslinux/mbr.bin')
