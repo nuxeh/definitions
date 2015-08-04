@@ -139,7 +139,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             dev.commit()
             dev.create_filesystems(skip=['/'])
         except (pyfdisk.PartitioningError, pyfdisk.FdiskError) as e:
-            raise writexts.ExtensionError(e.msg)
+            raise writeexts.ExtensionError(e.msg)
 
         mountpoints = set(part.mountpoint for part in dev.partitionlist)
         if '/' not in mountpoints:
