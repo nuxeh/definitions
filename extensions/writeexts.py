@@ -384,12 +384,26 @@ class WriteExtension(Extension):
             else:
                 raise
 
-    def get_uuid(self, location, offset=0):
-        '''Get the UUID of a block device's file system.'''
-        # Requires util-linux blkid; busybox one ignores options and
-        # lies by exiting successfully.
-        return subprocess.check_output(['blkid', '-s', 'UUID', '-o', 'value',
-                                        '-p', '-O', str(offset),
+    def get_uuid(self, location, offset=0, disk=False):
+        '''Get the UUID of a block device's file system.
+
+        Requires util-linux blkid; the busybox version ignores options and
+        lies by exiting successfully.
+
+        Args:
+            location: Path of device or image to inspect
+            offset: A byte offset - which should point to the start of a
+                    partition containing a filesystem
+            disk: Boolean, if true, find the disk (partition table) UUID,
+                  rather than a filesystem UUID. Offset has no effect.
+        '''
+        if disk:
+            field = 'PTUUID'
+        else:
+            field = 'UUID'
+
+        return subprocess.check_output(['blkid', '-s', field, '-o',
+                                        'value', '-p', '-O', str(offset),
                                         location]).strip()
 
     @contextlib.contextmanager
@@ -414,7 +428,7 @@ class WriteExtension(Extension):
             os.rmdir(mount_point)
 
     def create_btrfs_system_layout(self, temp_root, mountpoint, version_label,
-                                   disk_uuid, device):
+                                   rootfs_uuid, device):
         '''Separate base OS versions from state using subvolumes.
 
         '''
@@ -427,7 +441,7 @@ class WriteExtension(Extension):
 
         system_dir = self.create_orig(version_root, temp_root)
         state_dirs = self.complete_fstab_for_btrfs_layout(system_dir,
-                                                          disk_uuid, device)
+                                                          rootfs_uuid, device)
 
         for state_dir in state_dirs:
             self.create_state_subvolume(system_dir, mountpoint, state_dir)
@@ -444,9 +458,14 @@ class WriteExtension(Extension):
             self.install_syslinux_menu(mountpoint, version_root)
             if initramfs is not None:
                 self.install_initramfs(initramfs, version_root)
-                self.generate_bootloader_config(mountpoint, disk_uuid)
+                self.generate_bootloader_config(mountpoint,
+                                                rootfs_uuid=rootfs_uuid)
             else:
-                self.generate_bootloader_config(mountpoint)
+                disk_uuid = self.get_uuid(device.location, disk=True)
+                root_num = next(r.number for r in device.partitionlist
+                                         if r.mountpoint == '/')
+                self.generate_bootloader_config(mountpoint,
+                                                disk_uuid=disk_uuid, root_num)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
@@ -660,7 +679,7 @@ class WriteExtension(Extension):
     def get_root_device(self):
         return os.environ.get('ROOT_DEVICE', '/dev/sda')
 
-    def generate_bootloader_config(self, real_root, disk_uuid=None):
+    def generate_bootloader_config(self, *args, **kwargs):
         '''Install extlinux on the newly created disk image.'''
         config_function_dict = {
             'extlinux': self.generate_extlinux_config,
@@ -668,13 +687,24 @@ class WriteExtension(Extension):
 
         config_type = self.get_bootloader_config_format()
         if config_type in config_function_dict:
-            config_function_dict[config_type](real_root, disk_uuid)
+            config_function_dict[config_type](*args, **kwargs)
         else:
             raise ExtensionError(
                 'Invalid BOOTLOADER_CONFIG_FORMAT %s' % config_type)
 
-    def generate_extlinux_config(self, real_root, disk_uuid=None):
-        '''Install extlinux on the newly created disk image.'''
+    def generate_extlinux_config(self, real_root,
+                                 rootfs_uuid=None,
+                                 disk_uuid=None, boot_partition=False):
+        '''Generate the extlinux configuration file
+
+        Args:
+            real_root: Path to the mounted top level of the root filesystem
+            rootfs_uuid: Specify a filesystem UUID which can be loaded using
+                         an initramfs
+            disk_uuid: Disk UUID, can be used without an initramfs
+            boot_partition: Partition number of the boot partition if using
+                            disk_uuid
+        '''
 
         self.status(msg='Creating extlinux.conf')
         config = os.path.join(real_root, 'extlinux.conf')
@@ -690,9 +720,14 @@ class WriteExtension(Extension):
             'rootfstype=btrfs ' # required when using initramfs, also boots
                                 # faster when specified without initramfs
             'rootflags=subvol=systems/default/run ') # boot runtime subvol
-        kernel_args += 'root=%s ' % (self.get_root_device()
-                                     if disk_uuid is None
-                                     else 'UUID=%s' % disk_uuid)
+        if rootfs_uuid:
+            root_device = 'UUID=%s' % rootfs_uuid
+        elif disk_uuid:
+            root_device = 'PARTUUID=%s-%s' % (disk_uuid, boot_partition)
+        else:
+            # Fall back to the root partition named in the cluster
+            root_device = self.get_root_device()
+        kernel_args += 'root=%s ' % root_device
         kernel_args += self.get_extra_kernel_args()
         with open(config, 'w') as f:
             f.write('default linux\n')
