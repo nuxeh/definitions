@@ -724,7 +724,7 @@ class WriteExtension(Extension):
         if rootfs_uuid:
             root_device = 'UUID=%s' % rootfs_uuid
         elif disk_uuid:
-            root_device = 'PARTUUID=%s-%s' % (disk_uuid, root_partition)
+            root_device = 'PARTUUID=%s-%02s' % (disk_uuid, root_partition)
         else:
             # Fall back to the root partition named in the cluster
             root_device = self.get_root_device()
