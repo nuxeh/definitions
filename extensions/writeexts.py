@@ -465,7 +465,8 @@ class WriteExtension(Extension):
                 root_num = next(r.number for r in device.partitionlist
                                          if r.mountpoint == '/')
                 self.generate_bootloader_config(mountpoint,
-                                                disk_uuid=disk_uuid, root_num)
+                                                disk_uuid=disk_uuid,
+                                                root_partition=root_num)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
@@ -694,7 +695,7 @@ class WriteExtension(Extension):
 
     def generate_extlinux_config(self, real_root,
                                  rootfs_uuid=None,
-                                 disk_uuid=None, boot_partition=False):
+                                 disk_uuid=None, root_partition=False):
         '''Generate the extlinux configuration file
 
         Args:
@@ -702,7 +703,7 @@ class WriteExtension(Extension):
             rootfs_uuid: Specify a filesystem UUID which can be loaded using
                          an initramfs
             disk_uuid: Disk UUID, can be used without an initramfs
-            boot_partition: Partition number of the boot partition if using
+            root_partition: Partition number of the boot partition if using
                             disk_uuid
         '''
 
@@ -723,7 +724,7 @@ class WriteExtension(Extension):
         if rootfs_uuid:
             root_device = 'UUID=%s' % rootfs_uuid
         elif disk_uuid:
-            root_device = 'PARTUUID=%s-%s' % (disk_uuid, boot_partition)
+            root_device = 'PARTUUID=%s-%s' % (disk_uuid, root_partition)
         else:
             # Fall back to the root partition named in the cluster
             root_device = self.get_root_device()
