@@ -124,19 +124,22 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         if not disk_size:
             raise writeexts.ExtensionError('DISK_SIZE is not defined')
 
-        # Create partition table
-        dev = pyfdisk.load_yaml(part_spec, location, disk_size)
-        self.status(msg='Loaded partition specification from %s' % part_spec)
+        # Create partition table and filesystems
+        try:
+            dev = pyfdisk.load_yaml(part_spec, location, disk_size)
+            self.status(msg='Loaded partition specification %s' % part_spec)
 
-        # FIXME: GPT currently not supported due to missing tools
-        if dev.partition_table_format.lower() == 'gpt':
-            raise writeexts.ExtensionError('GPT partition tables are not '
-                                           'currently supported')
+            # FIXME: GPT currently not supported due to missing tools
+            if dev.partition_table_format.lower() == 'gpt':
+                raise writeexts.ExtensionError('GPT partition tables are not '
+                                               'currently supported')
 
-        self.status(msg=str(dev.partitionlist))
-
-        dev.commit()
-        dev.create_filesystems(skip=['/'])
+            self.status(msg=str(dev.partitionlist))
+            self.status(msg='Writing partition table')
+            dev.commit()
+            dev.create_filesystems(skip=['/'])
+        except (pyfdisk.PartitioningError, pyfdisk.FdiskError) as e:
+            raise writexts.ExtensionError(e.msg)
 
         mountpoints = set(part.mountpoint for part in dev.partitionlist)
         if '/' not in mountpoints:
