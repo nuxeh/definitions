@@ -513,7 +513,7 @@ class Device(object):
 
 class PartitioningError(Exception):
 
-    def __init__(self, msg):
+    def __init__(self, msg=None):
         self.msg = msg
 
     def __str__(self):
@@ -522,7 +522,7 @@ class PartitioningError(Exception):
 
 class FdiskError(Exception):
 
-    def __init__(self, msg):
+    def __init__(self, msg=None):
         self.msg = msg
 
     def __str__(self):
