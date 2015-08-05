@@ -183,7 +183,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             for part in device.partitionlist:
                 if hasattr(part, 'raw_files'):
                     write_raw_files(location, temp_root, part,
-                                    part.extent.start * device.sector_size)
+                                    part.extent.start * dev.sector_size)
 
     def write_raw_files(self, location, temp_root, item, start_offset):
         '''Copy files directly to a partition using `dd`
