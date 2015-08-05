@@ -178,7 +178,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                     self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
             # Write raw files
-            if hasattr(device, 'raw_files'):
+            if hasattr(dev, 'raw_files'):
                 write_raw_files(location, temp_root, device, 0)
             for part in device.partitionlist:
                 if hasattr(part, 'raw_files'):
