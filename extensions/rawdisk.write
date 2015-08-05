@@ -228,7 +228,8 @@ class RawFile(object):
         self.location = location
         if 'file' not in kwargs:
             raise writeexts.ExtensionError('Missing file name or path')
-        self.path = os.path.join(source_root, re.sub('^/', '', kwargs['file'])
+        self.path = os.path.join(source_root,
+                                 re.sub('^/', '', kwargs['file']))
 
         if not os.path.exists(self.path):
             raise writeexts.ExtensionError('File not found: %s' % source)
