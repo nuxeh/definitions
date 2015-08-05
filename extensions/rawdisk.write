@@ -177,6 +177,26 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                            re.sub('^/', '', part.mountpoint))
                     self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
+            # Write raw files
+            if hasattr(device, 'raw_files'):
+                write_raw_files(location, temp_root, device, 0)
+            for part in device.partitionlist:
+                if hasattr(part, 'raw_files'):
+                    write_raw_files(location, temp_root, part,
+                                    part.extent.start * device.sector_size)
+
+    def write_raw_files(self, location, temp_root, item, start_offset):
+        '''Copy files directly to a partition using `dd`
+
+        If device has a 'raw_files' attribute, dd named files starting at the
+        start of the device, or the start of a partition, for partitions with
+        a 'raw_files' attribute (see rawdisk.help)
+        '''
+        offset = start_offset
+        for raw_args in item.raw_files:
+            r = RawFile(location, temp_root, offset, **raw_args)
+            offset += r.increment
+            r.dd()
 
     @contextlib.contextmanager
     def mount_partition(self, partition, device):
@@ -186,5 +206,56 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                      * device.sector_size)) as loop_device:
             with self.mount(loop_device) as mountpoint:
                 yield mountpoint
+
+
+class RawFile(object):
+    '''A class to hold information about a raw file to write to a device'''
+
+    def __init__(location, source_root, offset=0, sector_size=512, **kwargs):
+        '''Initialisation function
+
+        Args:
+            location: Target path (device or image) to write to
+            source_root: The base path for filenames
+            offset: An offset to write to in bytes (overridden by offset and
+                    offset_bytes keyword arguments)
+            sector_size: The sector size (default: 512)
+            **kwargs:
+                file: A path to the file to write (combined with source_root)
+                offset: An offset to write to in sectors (optional)
+                offset_bytes: An offset to write to in bytes (optional)
+        '''
+        self.location = location
+        if 'file' not in kwargs:
+            raise writeexts.ExtensionError('Missing file name or path')
+        self.path = os.path.join(source_root, re.sub('^/', '', kwargs['file'])
+
+        if not os.path.exists(self.path):
+            raise writeexts.ExtensionError('File not found: %s' % source)
+        elif os.path.isdir(self.path):
+            raise writeexts.ExtensionError('Can only dd regular files')
+        else:
+            self.size = os.stat(self.path).st_size
+
+        self.increment = 0
+        if 'offset' in kwargs:
+            self.offset = kwargs['offset'] * sector_size
+        elif 'offset_bytes' in kwargs:
+            self.offset = kwargs['offset_bytes']
+        else:
+            self.increment = self.size
+            self.offset = offset
+
+    def dd(self):
+        self.status(msg='Writing %s at %d bytes' % (self.path, self.offset))
+        print(['dd', 'if=%s' % self.path,
+                                     'of=%s' % self.location, 'bs=1',
+                                     'seek=%s' % self.offset, 'conv=notrunc'])
+
+#       subprocess.check_call(['dd', 'if=%s' % self.path,
+#                                    'of=%s' % self.location, 'bs=1',
+#                                    'seek=%s' % self.offset, 'conv=notrunc'])
+        subprocess.check_call('sync')
+
 
 RawDiskWriteExtension().run()
