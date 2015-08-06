@@ -186,8 +186,12 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                 self.write_raw_files(location, temp_root, dev)
             for part in dev.partitionlist:
                 if hasattr(part, 'raw_files'):
+                    # dd seek is used, which skips n blocks before writing,
+                    # so we must skip n-1 sectors before writing in order to
+                    # start writing files to the first block of the partition
                     self.write_raw_files(location, temp_root, part,
-                                         part.extent.start * dev.sector_size)
+                                         (part.extent.start - 1) *
+                                         dev.sector_size)
 
     def write_raw_files(self, location, temp_root, item, start_offset=0):
         '''Write files with `dd`'''
@@ -220,7 +224,7 @@ class RawFile(object):
             sector_size: The sector size (default: 512)
             **kwargs:
                 file: A path to the file to write (combined with source_root)
-                offset: An offset to write to in sectors (optional)
+                offset_sectors: An offset to write to in sectors (optional)
                 offset_bytes: An offset to write to in bytes (optional)
         '''
         if 'file' not in kwargs:
