@@ -278,7 +278,6 @@ class Partition(object):
         number: Number used to override partition numbering for the
                 partition (Possible only when using an MBR partition table)
     """
-
     def __init__(self, size=0, fdisk_type=0x81, filesystem='none', **kwargs):
         if not size and 'size' not in kwargs:
             raise PartitioningError('Partition must have a non-zero size')
@@ -533,7 +532,7 @@ class FdiskError(Exception):
         return self.msg
 
 
-def load_yaml(yaml_file, location, size):
+def load_yaml(location, size, yaml_file):
     """
     Load partition data from a yaml specification
 
