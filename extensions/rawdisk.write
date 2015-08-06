@@ -127,7 +127,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         # Create partition table and filesystems
         try:
             dev = pyfdisk.load_yaml(part_spec, location, disk_size)
-            self.status(msg='Loaded partition specification %s' % part_spec)
+            self.status(msg='Loaded partition specification: %s' % part_spec)
 
             # FIXME: GPT currently not supported due to missing tools
             if dev.partition_table_format.lower() == 'gpt':
@@ -210,7 +210,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 class RawFile(object):
     '''A class to hold information about a raw file to write to a device'''
 
-    def __init__(source_root, wr_offset=0, sector_size=512, **kwargs):
+    def __init__(self, source_root, wr_offset=0, sector_size=512, **kwargs):
         '''Initialisation function
 
         Args:
@@ -229,7 +229,7 @@ class RawFile(object):
                                  re.sub('^/', '', kwargs['file']))
 
         if not os.path.exists(self.path):
-            raise writeexts.ExtensionError('File not found: %s' % source)
+            raise writeexts.ExtensionError('File not found: %s' % self.path)
         elif os.path.isdir(self.path):
             raise writeexts.ExtensionError('Can only dd regular files')
         else:
@@ -245,14 +245,10 @@ class RawFile(object):
         self.next_offset = self.size + self.offset
 
     def dd(self, location):
-        self.status(msg='Writing %s at %d bytes' % (self.path, self.offset))
-        print(['dd', 'if=%s' % self.path,
+        print 'Writing %s at %d bytes' % (self.path, self.offset)
+        subprocess.check_call(['dd', 'if=%s' % self.path,
                                      'of=%s' % location, 'bs=1',
                                      'seek=%s' % self.offset, 'conv=notrunc'])
-
-#       subprocess.check_call(['dd', 'if=%s' % self.path,
-#                                    'of=%s' % location, 'bs=1',
-#                                    'seek=%s' % self.offset, 'conv=notrunc'])
         subprocess.check_call('sync')
 
 
