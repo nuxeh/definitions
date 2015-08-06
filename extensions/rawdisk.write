@@ -126,7 +126,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 
         # Create partition table and filesystems
         try:
-            dev = pyfdisk.load_yaml(part_spec, location, disk_size)
+            dev = pyfdisk.load_yaml(location, disk_size, part_spec)
             self.status(msg='Loaded partition specification: %s' % part_spec)
 
             # FIXME: GPT currently not supported due to missing tools
