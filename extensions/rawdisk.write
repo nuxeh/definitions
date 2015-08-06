@@ -178,24 +178,21 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                     self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
             # Write raw files
+            # If a device or partition has a 'raw_files' attribute, dd files 
+            # at the start of the device, or the start of the partition
             if hasattr(dev, 'raw_files'):
-                write_raw_files(location, temp_root, device, 0)
+                self.write_raw_files(location, temp_root, device, 0)
             for part in device.partitionlist:
                 if hasattr(part, 'raw_files'):
-                    write_raw_files(location, temp_root, part,
-                                    part.extent.start * dev.sector_size)
+                    self.write_raw_files(location, temp_root, part,
+                                         part.extent.start * dev.sector_size)
 
     def write_raw_files(self, location, temp_root, item, start_offset):
-        '''Copy files directly to a partition using `dd`
-
-        If device has a 'raw_files' attribute, dd named files starting at the
-        start of the device, or the start of a partition, for partitions with
-        a 'raw_files' attribute (see rawdisk.help)
-        '''
+        '''Write files with `dd`'''
         offset = start_offset
         for raw_args in item.raw_files:
             r = RawFile(location, temp_root, offset, **raw_args)
-            offset += r.increment
+            offset = r.next_offset
             r.dd()
 
     @contextlib.contextmanager
@@ -211,7 +208,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 class RawFile(object):
     '''A class to hold information about a raw file to write to a device'''
 
-    def __init__(location, source_root, offset=0, sector_size=512, **kwargs):
+    def __init__(location, source_root, wr_off=0, sector_size=512, **kwargs):
         '''Initialisation function
 
         Args:
@@ -238,14 +235,14 @@ class RawFile(object):
         else:
             self.size = os.stat(self.path).st_size
 
-        self.increment = 0
-        if 'offset' in kwargs:
-            self.offset = kwargs['offset'] * sector_size
-        elif 'offset_bytes' in kwargs:
+        if 'offset_bytes' in kwargs:
             self.offset = kwargs['offset_bytes']
+        elif 'offset_sectors' in kwargs:
+            self.offset = kwargs['offset_sectors'] * sector_size
         else:
-            self.increment = self.size
-            self.offset = offset
+            self.offset = wr_off
+
+        self.next_offset = self.size + self.offset
 
     def dd(self):
         self.status(msg='Writing %s at %d bytes' % (self.path, self.offset))
