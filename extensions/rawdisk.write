@@ -235,12 +235,11 @@ class RawFile(object):
         else:
             self.size = os.stat(self.path).st_size
 
+        self.offset = wr_offset
         if 'offset_bytes' in kwargs:
-            self.offset = kwargs['offset_bytes'] + wr_offset
+            self.offset += kwargs['offset_bytes']
         elif 'offset_sectors' in kwargs:
-            self.offset = (kwargs['offset_sectors'] * sector_size) + wr_offset
-        else:
-            self.offset = wr_offset
+            self.offset += kwargs['offset_sectors'] * sector_size
 
         self.next_offset = self.size + self.offset
 
