@@ -468,7 +468,7 @@ class Device(object):
                 cmd += str(partition.fdisk_type) + "\n"
 
                 # Set bootable flag
-                if hasattr(partition, 'boot'):
+                if hasattr(partition, 'boot') and pt_format == 'mbr':
                     if str(partition.boot).lower() in ('yes', 'true'):
                         cmd += "a\n"
                         if partition.number > 1:
