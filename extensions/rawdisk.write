@@ -179,10 +179,12 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 
             # Write raw files
             # If a device or partition has a 'raw_files' attribute, dd files 
-            # at the start of the device, or the start of the partition
+            # from the start of the device, or the start of a partition. The
+            # 'raw_files' attribute is a list of the three possible **kwargs
+            # attributes for the RawFile class (from the YAML specification)
             if hasattr(dev, 'raw_files'):
-                self.write_raw_files(location, temp_root, device, 0)
-            for part in device.partitionlist:
+                self.write_raw_files(location, temp_root, dev, 0)
+            for part in dev.partitionlist:
                 if hasattr(part, 'raw_files'):
                     self.write_raw_files(location, temp_root, part,
                                          part.extent.start * dev.sector_size)
@@ -193,7 +195,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         for raw_args in item.raw_files:
             r = RawFile(location, temp_root, offset, **raw_args)
             offset = r.next_offset
-            r.dd()
+            r.dd(location)
 
     @contextlib.contextmanager
     def mount_partition(self, partition, device):
@@ -208,21 +210,19 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
 class RawFile(object):
     '''A class to hold information about a raw file to write to a device'''
 
-    def __init__(location, source_root, wr_off=0, sector_size=512, **kwargs):
+    def __init__(source_root, wr_offset=0, sector_size=512, **kwargs):
         '''Initialisation function
 
         Args:
-            location: Target path (device or image) to write to
             source_root: The base path for filenames
-            offset: An offset to write to in bytes (overridden by offset and
-                    offset_bytes keyword arguments)
+            wr_offset: An offset to seek to in bytes (overridden by offset
+                       and offset_bytes keyword arguments)
             sector_size: The sector size (default: 512)
             **kwargs:
                 file: A path to the file to write (combined with source_root)
                 offset: An offset to write to in sectors (optional)
                 offset_bytes: An offset to write to in bytes (optional)
         '''
-        self.location = location
         if 'file' not in kwargs:
             raise writeexts.ExtensionError('Missing file name or path')
         self.path = os.path.join(source_root,
@@ -240,18 +240,18 @@ class RawFile(object):
         elif 'offset_sectors' in kwargs:
             self.offset = kwargs['offset_sectors'] * sector_size
         else:
-            self.offset = wr_off
+            self.offset = wr_offset
 
         self.next_offset = self.size + self.offset
 
-    def dd(self):
+    def dd(self, location):
         self.status(msg='Writing %s at %d bytes' % (self.path, self.offset))
         print(['dd', 'if=%s' % self.path,
-                                     'of=%s' % self.location, 'bs=1',
+                                     'of=%s' % location, 'bs=1',
                                      'seek=%s' % self.offset, 'conv=notrunc'])
 
 #       subprocess.check_call(['dd', 'if=%s' % self.path,
-#                                    'of=%s' % self.location, 'bs=1',
+#                                    'of=%s' % location, 'bs=1',
 #                                    'seek=%s' % self.offset, 'conv=notrunc'])
         subprocess.check_call('sync')
 
