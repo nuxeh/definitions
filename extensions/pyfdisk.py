@@ -284,7 +284,7 @@ class Partition(object):
             raise PartitioningError('Partition must have a non-zero size')
         self.filesystem = filesystem
         self.fdisk_type = fdisk_type
-        self.size = size
+        self.size = decode_human_size(size)
         self.__dict__.update(**kwargs)
 
     def compare(self, other):
@@ -354,7 +354,7 @@ class Device(object):
         if str(size).lower() == 'fill':
             self.size = target_size
         else:
-            self.size = size
+            self.size = decode_human_size(size)
 
         if self.size > target_size:
             raise PartitioningError('Not enough space available on target')
@@ -571,7 +571,6 @@ def __filter_fdisk_list_output(regex, location):
     else:
         raise PartitioningError('Error reading information from fdisk')
 
-
 @contextlib.contextmanager
 def create_loopback(mount_path, offset=0, size=0):
     """
@@ -604,3 +603,12 @@ def create_loopback(mount_path, offset=0, size=0):
         yield loop_device
     finally:
         subprocess.check_call(['losetup', '-d', loop_device])
+
+def decode_human_size(size_string):
+    """Parse strings for human readable size factors"""
+
+    facts_of_1024 = ['', 'k', 'm', 'g', 't']
+    m = re.match('^(\d+)([kmgtKMGT]?)$', str(size_string))
+    if not m:
+        return size_string
+    return int(m.group(1)) * (1024 ** facts_of_1024.index(m.group(2).lower()))
