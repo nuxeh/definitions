@@ -193,7 +193,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         '''Write files with `dd`'''
         offset = start_offset
         for raw_args in item.raw_files:
-            r = RawFile(location, temp_root, offset, **raw_args)
+            r = RawFile(temp_root, offset, **raw_args)
             offset = r.next_offset
             r.dd(location)
 
