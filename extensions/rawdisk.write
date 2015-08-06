@@ -183,13 +183,13 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             # 'raw_files' attribute is a list of the three possible **kwargs
             # attributes for the RawFile class (from the YAML specification)
             if hasattr(dev, 'raw_files'):
-                self.write_raw_files(location, temp_root, dev, 0)
+                self.write_raw_files(location, temp_root, dev)
             for part in dev.partitionlist:
                 if hasattr(part, 'raw_files'):
                     self.write_raw_files(location, temp_root, part,
                                          part.extent.start * dev.sector_size)
 
-    def write_raw_files(self, location, temp_root, item, start_offset):
+    def write_raw_files(self, location, temp_root, item, start_offset=0):
         '''Write files with `dd`'''
         offset = start_offset
         for raw_args in item.raw_files:
@@ -236,9 +236,9 @@ class RawFile(object):
             self.size = os.stat(self.path).st_size
 
         if 'offset_bytes' in kwargs:
-            self.offset = kwargs['offset_bytes']
+            self.offset = kwargs['offset_bytes'] + wr_offset
         elif 'offset_sectors' in kwargs:
-            self.offset = kwargs['offset_sectors'] * sector_size
+            self.offset = (kwargs['offset_sectors'] * sector_size) + wr_offset
         else:
             self.offset = wr_offset
 
