@@ -228,7 +228,8 @@ class Extension(object):
             sys.stdout.write('ERROR: %s\n' % e)
             sys.exit(1)
 
-    def status(self, **kwargs):
+    @staticmethod
+    def status(**kwargs):
         '''Provide status output.
 
         The ``msg`` keyword argument is the actual message,

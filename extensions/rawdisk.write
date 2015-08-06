@@ -159,17 +159,24 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                      'for \'%s\' partition in the partition '
                                      'specification' % part.mountpoint)
             if part.mountpoint == '/':
+                # Check that bootable flag is set for MBR devices
+                if (hasattr(part, 'boot')
+                      and str(part.boot).lower() not in ('yes', 'true')
+                      and dev.partition_table_format.lower() == 'mbr'):
+                    self.status(msg='WARNING: Boot partition needs bootable '
+                                    'flag set to boot with extlinux/syslinux')
                 # Re-format the rootfs, to include needed extra features
                 with pyfdisk.create_loopback(location,
                                              part.extent.start *
                                              dev.sector_size, part.size) as l:
                     self.mkfs_btrfs(l)
+
             with self.mount_partition(part, dev) as part_mount_dir:
                 if part.mountpoint == '/':
+                    # Install system
                     root_uuid = self.get_uuid(location, part.extent.start *
                                               dev.sector_size)
-                    self.create_btrfs_system_layout(temp_root,
-                                                    part_mount_dir,
+                    self.create_btrfs_system_layout(temp_root, part_mount_dir,
                                                     'factory', root_uuid, dev)
                 else:
                     # Copy files to partition from unpacked rootfs
@@ -218,10 +225,9 @@ class RawFile(object):
         '''Initialisation function
 
         Args:
-            source_root: The base path for filenames
-            wr_offset: An offset to seek to in bytes (overridden by offset
-                       and offset_bytes keyword arguments)
-            sector_size: The sector size (default: 512)
+            source_root: Base path for filenames
+            wr_offset: Offset to write to (and offset per-file offsets by)
+            sector_size: Device sector size (default: 512)
             **kwargs:
                 file: A path to the file to write (combined with source_root)
                 offset_sectors: An offset to write to in sectors (optional)
@@ -245,10 +251,12 @@ class RawFile(object):
         elif 'offset_sectors' in kwargs:
             self.offset += kwargs['offset_sectors'] * sector_size
 
+        # Offset of the first free byte after this file
         self.next_offset = self.size + self.offset
 
     def dd(self, location):
-        print 'Writing %s at %d bytes' % (self.path, self.offset)
+        writeexts.Extension.status(msg='Writing %s at %d bytes' %
+                                       (self.path, self.offset))
         subprocess.check_call(['dd', 'if=%s' % self.path,
                                      'of=%s' % location, 'bs=1',
                                      'seek=%s' % self.offset, 'conv=notrunc'])
