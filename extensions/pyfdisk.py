@@ -161,8 +161,9 @@ class PartitionList(object):
         return self.__next__()
 
     def __getitem__(self, i):
-        """Return an updated partition from the list"""
-        part_list = self.__update_partition_list()
+        """Return an partition from the list, sorted by partition number"""
+        part_list = sorted(self.__update_partition_list(),
+                           key=lambda part: part.number)
         return part_list[i]
 
     def free_sectors(self):
@@ -501,7 +502,7 @@ class Device(object):
             creation on, for example if custom settings are required
         """
         for part in self.partitionlist:
-            if part.mountpoint in skip:
+            if hasattr(part, 'mountpoint') and part.mountpoint in skip:
                 continue
             if part.filesystem.lower() != 'none':
                 with create_loopback(self.location,

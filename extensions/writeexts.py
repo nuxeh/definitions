@@ -464,7 +464,8 @@ class WriteExtension(Extension):
             else:
                 disk_uuid = self.get_uuid(device.location, disk=True)
                 root_num = next(r.number for r in device.partitionlist
-                                         if r.mountpoint == '/')
+                                         if hasattr(r, 'mountpoint')
+                                         and r.mountpoint == '/')
                 self.generate_bootloader_config(mountpoint,
                                                 disk_uuid=disk_uuid,
                                                 root_partition=root_num)
