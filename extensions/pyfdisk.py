@@ -448,7 +448,8 @@ class Device(object):
         elif pt_format == 'gpt':
             cmd = "g\n"
         else:
-            raise PartitioningError('Unrecognised partition table type')
+            raise PartitioningError('Unrecognised partition '
+                                    'table type \'%s\'' % pt_format)
 
         for partition in self.partitionlist:
             # Create partitions
