@@ -469,7 +469,8 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint,
                                                 disk_uuid=disk_uuid,
                                                 root_partition=root_num)
-            self.install_bootloader(mountpoint, system_dir, device.location)
+            self.install_bootloader(mountpoint, system_dir,
+                                    device.location, root_num)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
         # empty mount drectory (files are copied to the actual partition
@@ -757,21 +758,47 @@ class WriteExtension(Extension):
             raise ExtensionError(
                 'Invalid BOOTLOADER_INSTALL %s' % install_type)
 
-    def install_bootloader_extlinux(self, real_root, orig_root, location):
+    def install_bootloader_extlinux(self, real_root, orig_root,
+                                    device, boot_part_num):
         self.status(msg='Installing extlinux')
         subprocess.check_call(['extlinux', '--install', real_root])
 
         # FIXME this hack seems to be necessary to let extlinux finish
+        # Test this
         subprocess.check_call(['sync'])
         time.sleep(2)
 
-        # Install Syslinux MBR blob
-        self.status(msg='Installing syslinux MBR blob')
-        mbr_blob_location = os.path.join(orig_root,
-                            'usr/share/syslinux/mbr.bin')
-        subprocess.check_call(['dd', 'if=%s' % mbr_blob_location,
-                                     'of=%s' % location,
-                                     'bs=440', 'count=1', 'conv=notrunc'])
+        # Install Syslinux master boot record (MBR)
+        pt_format = device.partition_table_format.lower()
+        mbr_blob = None
+        if pt_format in ('mbr', 'dos'):
+            # Install Syslinux MBR blob
+            mbr_blob = 'mbr.bin'
+        elif pt_format == 'gpt':
+            # Install Syslinux GPT blob
+            mbr_blob = 'gptmbr.bin'
+
+            # Set GPT lecacy boot attribute
+            parted_path = 'usr/sbin/parted'
+            parted_args = [device.location, 'set',
+                           boot_part_num, 'legacy_boot', 'on']
+
+            if os.path.exists('/' + parted_path):
+                subprocess.check_call(['parted'] + parted_args)
+            elif os.path.exists(os.path.join(orig_root, parted_path)):
+                # Fall back to using the binary from the rootfs being deployed
+                # since parted is not available in older systems
+                parted_bin = os.path.join(orig_root, parted_path)
+                env = {'LD_LIBRARY_PATH': os.path.join(orig_root, 'usr/lib'}
+                subprocess.Popen([parted_bin] + parted_args, env=env)
+
+        if mbr_blob:
+            self.status(msg='Installing syslinux %s blob' % pt_format.upper())
+            blob_location = os.path.join(orig_root, 'usr/share/syslinux/%s' %
+                                                     mbr_blob)
+            subprocess.check_call(['dd', 'if=%s' % blob_location,
+                                         'of=%s' % device.location,
+                                         'bs=440', 'count=1', 'conv=notrunc'])
 
     def install_syslinux_menu(self, real_root, version_root):
         '''Make syslinux/extlinux menu binary available.
