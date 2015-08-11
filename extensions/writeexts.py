@@ -469,8 +469,7 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint,
                                                 disk_uuid=disk_uuid,
                                                 root_partition=root_num)
-            self.install_bootloader(mountpoint, system_dir,
-                                    device.location, root_num)
+            self.install_bootloader(mountpoint, system_dir, device, root_num)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
         # empty mount drectory (files are copied to the actual partition
@@ -789,7 +788,7 @@ class WriteExtension(Extension):
                 # Fall back to using the binary from the rootfs being deployed
                 # since parted is not available in older systems
                 parted_bin = os.path.join(orig_root, parted_path)
-                env = {'LD_LIBRARY_PATH': os.path.join(orig_root, 'usr/lib'}
+                env = {'LD_LIBRARY_PATH': os.path.join(orig_root, 'usr/lib')}
                 subprocess.Popen([parted_bin] + parted_args, env=env)
 
         if mbr_blob:
