@@ -903,6 +903,7 @@ class WriteExtension(Extension):
             with self.mount(loop) as mountpoint:
                 yield mountpoint
 
+    @contextlib.contextmanager
     def find_rootfs(self, location):
         """Find a Baserock rootfs in a partitioned device or image"""
         for part_offset in pyfdisk.get_disk_offsets(location):
