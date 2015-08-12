@@ -71,7 +71,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         # Search for a Baserock root filesystem in the device's partitions
         for part_offset in pyfdisk.get_disk_offsets(location):
             with self.mount_partition(location, part_offset) as mp:
-                path = os.path.join(mp, 'systems/default/orig/baserock'))
+                path = os.path.join(mp, 'systems/default/orig/baserock')
                 if os.path.exists(path):
                     self.status(msg='Found a Baserock rootfs at '
                                     'offset %d' % part_offset)
