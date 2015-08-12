@@ -73,8 +73,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         with self.find_rootfs(location) as mp:
             self.do_upgrade(mp, temp_root)
 
-
-    def do_upgrade(mp, temp_root):
+    def do_upgrade(self, mp, temp_root):
         version_label = self.get_version_label(mp)
         self.status(msg='Updating image to a new version with label %s' %
                     version_label)

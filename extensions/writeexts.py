@@ -912,5 +912,6 @@ class WriteExtension(Extension):
                 path = os.path.join(mp, 'systems/default/orig/baserock')
                 if os.path.exists(path):
                     self.status(msg='Found a Baserock rootfs at '
-                                    'offset %d' % offset)
+                                    'offset %d sectors/%d bytes' %
+                                     (offset, offset * sector_size))
                     yield mp
