@@ -558,19 +558,25 @@ def load_yaml(location, size, yaml_file):
 
 
 def get_sector_size(location):
-    """Get the logical sector size of a device or image, in bytes"""
-    return int(__filter_fdisk_list_output('.*Sector size.*?(\d+) bytes',
-                                       location))
+    """Get the logical sector size of a block device or image, in bytes"""
+    return int(__filter_fdisk_list_output('Sector size.*?(\d+) bytes',
+                                          location)[0])
 
 def get_disk_size(location):
-    """Get the total size of a real block device or image, in bytes"""
-    return int(__filter_fdisk_list_output('.*Disk.*?(\d+) bytes', location))
+    """Get the total size of a block device or image, in bytes"""
+    return int(__filter_fdisk_list_output('Disk.*?(\d+) bytes',
+                                          location)[0])
+
+def get_disk_offsets(location):
+    """Return an array of the partition start sectors in a device or image"""
+    return __filter_fdisk_list_output('%s\d+[\s*]+(\d+)' % location,
+                                          location)
 
 def __filter_fdisk_list_output(regex, location):
     r = re.compile(regex, re.DOTALL)
-    m = re.match(r, subprocess.check_output(['fdisk', '-l', location]))
+    m = re.findall(r, subprocess.check_output(['fdisk', '-l', location]))
     if m:
-        return m.group(1)
+        return m
     else:
         raise PartitioningError('Error reading information from fdisk')
 
