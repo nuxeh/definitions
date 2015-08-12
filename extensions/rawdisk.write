@@ -41,60 +41,75 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         temp_root, location = args
         upgrade = self.get_environment_boolean('UPGRADE')
 
-        part_spec = os.environ.get('PARTITION_FILE', 'partitioning/default')
-
         if upgrade:
             self.upgrade_local_system(location, temp_root)
         else:
             try:
                 if not self.is_device(location):
                     with self.created_disk_image(location):
-                        self.do_partitioning(location, temp_root, part_spec)
+                        self.create_partitioned_system(temp_root, location)
                     self.status(msg='Disk image has been created at %s' %
                                      location)
                 else:
-                    self.do_partitioning(location, temp_root, part_spec)
+                    self.create_partitioned_system(temp_root, location)
                     self.status(msg='System deployed to %s' % location)
             except Exception:
                 self.status(msg='Failure to deploy system to %s' %
                                  location)
                 raise
 
-    def upgrade_local_system(self, raw_disk, temp_root):
+    def upgrade_local_system(self, location, temp_root):
         self.complete_fstab_for_btrfs_layout(temp_root)
 
-        with self.mount(raw_disk) as mp:
-            version_label = self.get_version_label(mp)
-            self.status(msg='Updating image to a new version with label %s' %
-                        version_label)
+        try:
+            with self.mount(location) as mp:
+                self.do_upgrade(mp, temp_root)
+                return
+        except subprocess.CalledProcessError:
+            pass
+        
+        # Search for a Baserock root filesystem in the device's partitions
+        for part_offset in pyfdisk.get_disk_offsets(location):
+            with self.mount_partition(location, part_offset) as mp:
+                path = os.path.join(mp, 'systems/default/orig/baserock'))
+                if os.path.exists(path):
+                    self.status(msg='Found a Baserock rootfs at '
+                                    'offset %d' % part_offset)
+                    self.do_upgrade(mp, temp_root)
 
-            version_root = os.path.join(mp, 'systems', version_label)
-            os.mkdir(version_root)
 
-            old_orig = os.path.join(mp, 'systems', 'default', 'orig')
-            new_orig = os.path.join(version_root, 'orig')
-            subprocess.check_call(
-                ['btrfs', 'subvolume', 'snapshot', old_orig, new_orig])
+    def do_upgrade(mp, temp_root):
+        version_label = self.get_version_label(mp)
+        self.status(msg='Updating image to a new version with label %s' %
+                    version_label)
 
-            subprocess.check_call(
-                ['rsync', '-a', '--checksum', '--numeric-ids', '--delete',
-                 temp_root + os.path.sep, new_orig])
+        version_root = os.path.join(mp, 'systems', version_label)
+        os.mkdir(version_root)
 
-            self.create_run(version_root)
+        old_orig = os.path.join(mp, 'systems', 'default', 'orig')
+        new_orig = os.path.join(version_root, 'orig')
+        subprocess.check_call(
+            ['btrfs', 'subvolume', 'snapshot', old_orig, new_orig])
 
-            default_path = os.path.join(mp, 'systems', 'default')
-            if os.path.exists(default_path):
-                os.remove(default_path)
-            else:
-                # we are upgrading and old system that does
-                # not have an updated extlinux config file
-                if self.bootloader_config_is_wanted():
-                    self.generate_bootloader_config(mp)
-                self.install_bootloader(mp)
-            os.symlink(version_label, default_path)
+        subprocess.check_call(
+            ['rsync', '-a', '--checksum', '--numeric-ids', '--delete',
+             temp_root + os.path.sep, new_orig])
 
+        self.create_run(version_root)
+
+        default_path = os.path.join(mp, 'systems', 'default')
+        if os.path.exists(default_path):
+            os.remove(default_path)
+        else:
+            # we are upgrading and old system that does
+            # not have an updated extlinux config file
             if self.bootloader_config_is_wanted():
-                self.install_kernel(version_root, temp_root)
+                self.generate_bootloader_config(mp)
+            self.install_bootloader(mp)
+        os.symlink(version_label, default_path)
+
+        if self.bootloader_config_is_wanted():
+            self.install_kernel(version_root, temp_root)
 
     def get_version_label(self, mp):
         version_label = os.environ.get('VERSION_LABEL')
@@ -107,163 +122,6 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                                            % version_label)
 
         return version_label
-
-    def do_partitioning(self, location, temp_root, part_spec):
-        '''Perform partitioning
-
-        Perform partitioning using the pyfdisk.py module. Documentation
-        for this, and guidance on how to create a partition specification can
-        be found in extensions/pyfdisk.README
-
-        Args:
-            location: Path to the target device or image
-            temp_root: Location of the unpacked Baserock rootfs
-            part_spec: Path to a YAML formatted partition specification
-        '''
-        disk_size = self.get_disk_size()
-        if not disk_size:
-            raise writeexts.ExtensionError('DISK_SIZE is not defined')
-
-        # Create partition table and filesystems
-        try:
-            dev = pyfdisk.load_yaml(location, disk_size, part_spec)
-            self.status(msg='Loaded partition specification: %s' % part_spec)
-
-            # FIXME: GPT currently not supported due to missing tools
-            if dev.partition_table_format.lower() == 'gpt':
-                raise writeexts.ExtensionError('GPT partition tables are not '
-                                               'currently supported')
-
-            self.status(msg=str(dev.partitionlist))
-            self.status(msg='Writing partition table')
-            dev.commit()
-            dev.create_filesystems(skip=['/'])
-        except (pyfdisk.PartitioningError, pyfdisk.FdiskError) as e:
-            raise writeexts.ExtensionError(e.msg)
-
-        mountpoints = set(part.mountpoint for part in dev.partitionlist
-                                          if hasattr(part, 'mountpoint'))
-        if '/' not in mountpoints:
-            raise writeexts.ExtensionError('No partition with root '
-                                           'mountpoint, please specify a '
-                                           'partition with \'mountpoint: /\' '
-                                           'in the partition specification')
-
-        mounted_partitions = set(part for part in dev.partitionlist
-                                 if hasattr(part, 'mountpoint'))
-
-        # Create root filesystem, and copy files to partitions
-        for part in mounted_partitions:
-            if not hasattr(part, 'filesystem'):
-                raise writeexts.ExtensionError('Cannot mount a partition '
-                                     'without filesystem, please specify one '
-                                     'for \'%s\' partition in the partition '
-                                     'specification' % part.mountpoint)
-            if part.mountpoint == '/':
-                # Check that bootable flag is set for MBR devices
-                if (hasattr(part, 'boot')
-                      and str(part.boot).lower() not in ('yes', 'true')
-                      and dev.partition_table_format.lower() == 'mbr'):
-                    self.status(msg='WARNING: Boot partition needs bootable '
-                                    'flag set to boot with extlinux/syslinux')
-                # Re-format the rootfs, to include needed extra features
-                with pyfdisk.create_loopback(location,
-                                             part.extent.start *
-                                             dev.sector_size, part.size) as l:
-                    self.mkfs_btrfs(l)
-
-            with self.mount_partition(part, dev) as part_mount_dir:
-                if part.mountpoint == '/':
-                    # Install system
-                    root_uuid = self.get_uuid(location, part.extent.start *
-                                              dev.sector_size)
-                    self.create_btrfs_system_layout(temp_root, part_mount_dir,
-                                                    'factory', root_uuid, dev)
-                else:
-                    # Copy files to partition from unpacked rootfs
-                    src_dir = os.path.join(temp_root,
-                                           re.sub('^/', '', part.mountpoint))
-                    self.status(msg='Copying files for %s partition' %
-                                     part.mountpoint)
-                    self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
-
-            # Write raw files
-            # If a device or partition has a 'raw_files' attribute, dd files
-            # from the start of the device, or the start of a partition. The
-            # 'raw_files' attribute is a list of the three possible **kwargs
-            # attributes for the RawFile class (from the YAML specification)
-            if hasattr(dev, 'raw_files'):
-                self.write_raw_files(location, temp_root, dev)
-            for part in dev.partitionlist:
-                if hasattr(part, 'raw_files'):
-                    # dd seek is used, which skips n blocks before writing,
-                    # so we must skip n-1 sectors before writing in order to
-                    # start writing files to the first block of the partition
-                    self.write_raw_files(location, temp_root, part,
-                                         (part.extent.start - 1) *
-                                         dev.sector_size)
-
-    def write_raw_files(self, location, temp_root, item, start_offset=0):
-        '''Write files with `dd`'''
-        offset = start_offset
-        for raw_args in item.raw_files:
-            r = RawFile(temp_root, offset, **raw_args)
-            offset = r.next_offset
-            r.dd(location)
-
-    @contextlib.contextmanager
-    def mount_partition(self, partition, device):
-        self.status(msg='Mounting partition %d' % partition.number)
-        with pyfdisk.create_loopback(device.location,
-                                     offset=(partition.extent.start
-                                     * device.sector_size)) as loop_device:
-            with self.mount(loop_device) as mountpoint:
-                yield mountpoint
-
-
-class RawFile(object):
-    '''A class to hold information about a raw file to write to a device'''
-
-    def __init__(self, source_root, wr_offset=0, sector_size=512, **kwargs):
-        '''Initialisation function
-
-        Args:
-            source_root: Base path for filenames
-            wr_offset: Offset to write to (and offset per-file offsets by)
-            sector_size: Device sector size (default: 512)
-            **kwargs:
-                file: A path to the file to write (combined with source_root)
-                offset_sectors: An offset to write to in sectors (optional)
-                offset_bytes: An offset to write to in bytes (optional)
-        '''
-        if 'file' not in kwargs:
-            raise writeexts.ExtensionError('Missing file name or path')
-        self.path = os.path.join(source_root,
-                                 re.sub('^/', '', kwargs['file']))
-
-        if not os.path.exists(self.path):
-            raise writeexts.ExtensionError('File not found: %s' % self.path)
-        elif os.path.isdir(self.path):
-            raise writeexts.ExtensionError('Can only dd regular files')
-        else:
-            self.size = os.stat(self.path).st_size
-
-        self.offset = wr_offset
-        if 'offset_bytes' in kwargs:
-            self.offset += kwargs['offset_bytes']
-        elif 'offset_sectors' in kwargs:
-            self.offset += kwargs['offset_sectors'] * sector_size
-
-        # Offset of the first free byte after this file
-        self.next_offset = self.size + self.offset
-
-    def dd(self, location):
-        writeexts.Extension.status(msg='Writing %s at %d bytes' %
-                                       (self.path, self.offset))
-        subprocess.check_call(['dd', 'if=%s' % self.path,
-                                     'of=%s' % location, 'bs=1',
-                                     'seek=%s' % self.offset, 'conv=notrunc'])
-        subprocess.check_call('sync')
 
 
 RawDiskWriteExtension().run()

@@ -18,6 +18,8 @@ import errno
 import fcntl
 import logging
 import os
+import partitioning
+import pyfdisk
 import re
 import select
 import shutil
@@ -265,12 +267,11 @@ class WriteExtension(Extension):
                 'Error: Btrfs is required for this deployment, but was not '
                 'detected in the kernel of the machine that is running Morph.')
 
-    def create_local_system(self, temp_root, raw_disk):
+    def create_local_system(self, temp_root, location):
         '''Create a raw system image locally.'''
 
-        with self.created_disk_image(raw_disk):
-            self.format_btrfs(raw_disk)
-            self.create_system(temp_root, raw_disk)
+        with self.created_disk_image(location):
+            self.create_partitioned_system(temp_root, location)
 
     @contextlib.contextmanager
     def created_disk_image(self, location):
@@ -290,16 +291,6 @@ class WriteExtension(Extension):
         except BaseException:
             sys.stderr.write('Error creating disk image')
             raise
-
-    def create_system(self, temp_root, raw_disk):
-        with self.mount(raw_disk) as mp:
-            try:
-                self.create_btrfs_system_layout(
-                    temp_root, mp, version_label='factory',
-                    disk_uuid=self.get_uuid(raw_disk))
-            except BaseException as e:
-                sys.stderr.write('Error creating Btrfs system layout')
-                raise
 
     def _parse_size(self, size):
         '''Parse a size from a string.
@@ -471,6 +462,7 @@ class WriteExtension(Extension):
                                                 root_partition=root_num)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
+        # Move this?
         # Delete contents of partition mountpoints in the rootfs to leave an
         # empty mount drectory (files are copied to the actual partition
         # separately), or create an empty mount directory in the rootfs.
@@ -851,3 +843,60 @@ class WriteExtension(Extension):
             if e.errno == errno.ENOENT:
                 return False
             raise
+
+    def create_partitioned_system(temp_root, location):
+        '''Create a Baserock system in a partitioned disk image or device'''
+
+        part_spec = os.environ.get('PARTITION_FILE', 'partitioning/default')
+
+        disk_size = self.get_disk_size()
+        if not disk_size:
+            raise writeexts.ExtensionError('DISK_SIZE is not defined')
+
+        dev = partitioning.do_partitioning(location, disk_size,
+                                           temp_root, part_spec)
+
+        for part in dev.partitionlist:
+            if not hasattr(part, 'mountpoint'):
+                continue
+            if part.mountpoint == '/':
+                # Re-format the rootfs, to include needed extra features
+                with pyfdisk.create_loopback(location,
+                                             part.extent.start *
+                                             dev.sector_size, part.size) as l:
+                    self.mkfs_btrfs(l)
+
+            self.status(msg='Mounting partition %d' % partition.number)
+            offset = part.extent.start * dev.sector_size
+            with self.mount_partition(location, offset) as part_mount_dir:
+                if part.mountpoint == '/':
+                    # Install system
+                    root_uuid = self.get_uuid(location, part.extent.start *
+                                              dev.sector_size)
+                    self.create_btrfs_system_layout(temp_root, part_mount_dir,
+                                                    'factory', root_uuid, dev)
+                else:
+                    # Copy files to partition from unpacked rootfs
+                    src_dir = os.path.join(temp_root,
+                                           re.sub('^/', '', part.mountpoint))
+                    self.status(msg='Copying files for %s partition' %
+                                     part.mountpoint)
+                    self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
+
+            # Write raw files
+            if hasattr(dev, 'raw_files'):
+                partitioning.write_raw_files(location, temp_root, dev)
+            for part in dev.partitionlist:
+                if hasattr(part, 'raw_files'):
+                    # dd seek is used, which skips n blocks before writing,
+                    # so we must skip n-1 sectors before writing in order to
+                    # start writing files to the first block of the partition
+                    partitioning.write_raw_files(location, temp_root, part,
+                                                 (part.extent.start - 1) *
+                                                 dev.sector_size)
+
+    @contextlib.contextmanager
+    def mount_partition(self, location, offset_bytes):
+        with pyfdisk.create_loopback(location, offset=offset_bytes as loopdev:
+            with self.mount(loopdev) as mountpoint:
+                yield mountpoint
