@@ -866,7 +866,7 @@ class WriteExtension(Extension):
                                              dev.sector_size, part.size) as l:
                     self.mkfs_btrfs(l)
 
-            self.status(msg='Mounting partition %d' % partition.number)
+            self.status(msg='Mounting partition %d' % part.number)
             offset = part.extent.start * dev.sector_size
             with self.mount_partition(location, offset) as part_mount_dir:
                 if part.mountpoint == '/':
