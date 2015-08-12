@@ -897,6 +897,6 @@ class WriteExtension(Extension):
 
     @contextlib.contextmanager
     def mount_partition(self, location, offset_bytes):
-        with pyfdisk.create_loopback(location, offset=offset_bytes as loopdev:
-            with self.mount(loopdev) as mountpoint:
+        with pyfdisk.create_loopback(location, offset=offset_bytes) as loop:
+            with self.mount(loop) as mountpoint:
                 yield mountpoint
