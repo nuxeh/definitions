@@ -844,7 +844,7 @@ class WriteExtension(Extension):
                 return False
             raise
 
-    def create_partitioned_system(temp_root, location):
+    def create_partitioned_system(self, temp_root, location):
         '''Create a Baserock system in a partitioned disk image or device'''
 
         part_spec = os.environ.get('PARTITION_FILE', 'partitioning/default')
