@@ -569,8 +569,8 @@ def get_disk_size(location):
 
 def get_disk_offsets(location):
     """Return an array of the partition start sectors in a device or image"""
-    return __filter_fdisk_list_output('%s\d+[\s*]+(\d+)' % location,
-                                          location)
+    return map(int, __filter_fdisk_list_output('%s\d+[\s*]+(\d+)' % location,
+                                               location))
 
 def __filter_fdisk_list_output(regex, location):
     r = re.compile(regex, re.DOTALL)
