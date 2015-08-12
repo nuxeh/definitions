@@ -40,15 +40,16 @@ def do_partitioning(location, disk_size, temp_root, part_spec):
     # Create partition table and filesystems
     try:
         dev = pyfdisk.load_yaml(location, disk_size, part_spec)
-        writeexts.status(msg='Loaded partition specification: %s' % part_spec)
+        writeexts.Extension.status(msg='Loaded partition specification: %s' %
+                                        part_spec)
 
         # FIXME: GPT currently not supported due to missing tools
         if dev.partition_table_format.lower() == 'gpt':
             raise writeexts.ExtensionError('GPT partition tables are not '
                                            'currently supported')
 
-        writeexts.status(msg=str(dev.partitionlist))
-        writeexts.status(msg='Writing partition table')
+        writeexts.Extension.status(msg=str(dev.partitionlist))
+        writeexts.Extension.status(msg='Writing partition table')
         dev.commit()
         dev.create_filesystems(skip=['/'])
     except (pyfdisk.PartitioningError, pyfdisk.FdiskError) as e:
@@ -77,8 +78,9 @@ def do_partitioning(location, disk_size, temp_root, part_spec):
             if (hasattr(part, 'boot')
                   and str(part.boot).lower() not in ('yes', 'true')
                   and dev.partition_table_format.lower() == 'mbr'):
-                writeexts.status(msg='WARNING: Boot partition needs bootable '
-                                'flag set to boot with extlinux/syslinux')
+                writeexts.Extension.status(msg='WARNING: Boot partition '
+                                               'needs bootable flag set to '
+                                               'boot with extlinux/syslinux')
 
     return dev
 

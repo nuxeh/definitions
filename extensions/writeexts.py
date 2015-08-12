@@ -897,6 +897,17 @@ class WriteExtension(Extension):
 
     @contextlib.contextmanager
     def mount_partition(self, location, offset_bytes):
+        """Mount a partition in a partitioned device or image"""
         with pyfdisk.create_loopback(location, offset=offset_bytes) as loop:
             with self.mount(loop) as mountpoint:
                 yield mountpoint
+
+    def find_rootfs(self, location):
+        """Find a Baserock rootfs in a partitioned device or image"""
+        for part_offset in pyfdisk.get_disk_offsets(location):
+            with self.mount_partition(location, part_offset) as mp:
+                path = os.path.join(mp, 'systems/default/orig/baserock')
+                if os.path.exists(path):
+                    self.status(msg='Found a Baserock rootfs at '
+                                    'offset %d' % part_offset)
+                    yield mp

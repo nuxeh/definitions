@@ -67,15 +67,11 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
                 return
         except subprocess.CalledProcessError:
             pass
-        
-        # Search for a Baserock root filesystem in the device's partitions
-        for part_offset in pyfdisk.get_disk_offsets(location):
-            with self.mount_partition(location, part_offset) as mp:
-                path = os.path.join(mp, 'systems/default/orig/baserock')
-                if os.path.exists(path):
-                    self.status(msg='Found a Baserock rootfs at '
-                                    'offset %d' % part_offset)
-                    self.do_upgrade(mp, temp_root)
+
+        # Failed to mount a raw image, search for a Baserock root filesystem
+        # in the device's partitions
+        with self.find_rootfs() as mp:
+            self.do_upgrade(mp, temp_root)
 
 
     def do_upgrade(mp, temp_root):
