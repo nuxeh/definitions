@@ -596,8 +596,8 @@ class WriteExtension(Extension):
         state_dirs_to_create = set()
         for state_dir in shared_state_dirs:
             mp = '/' + state_dir
-            if mp not in existing_mounts and
-                  (device and mp not in part_mountpoints):
+            if (mp not in existing_mounts and
+                  (device and mp not in part_mountpoints))
                 state_dirs_to_create.add(state_dir)
                 state_subvol = os.path.join('/state', state_dir)
                 fstab.add_line(
