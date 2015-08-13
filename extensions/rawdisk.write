@@ -69,7 +69,7 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             pass
 
         # Failed to mount a raw image, search for a Baserock root filesystem
-        # in the device's partitions
+        # in the device's partitions:
         with self.find_and_mount_rootfs(location) as mp:
             self.do_upgrade(mp, temp_root)
 
