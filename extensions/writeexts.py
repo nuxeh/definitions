@@ -882,22 +882,12 @@ class WriteExtension(Extension):
                     # Copy files to partition from unpacked rootfs
                     src_dir = os.path.join(temp_root,
                                            re.sub('^/', '', part.mountpoint))
-                    self.status(msg='Copying files for %s partition' %
+                    self.status(msg='Copying files to %s partition' %
                                      part.mountpoint)
                     self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
-            # TODO: move this to partitioning.py
-            # Write raw files
-            if hasattr(dev, 'raw_files'):
-                partitioning.write_raw_files(location, temp_root, dev)
-            for part in dev.partitionlist:
-                if hasattr(part, 'raw_files'):
-                    # dd seek is used, which skips n blocks before writing,
-                    # so we must skip n-1 sectors before writing in order to
-                    # start writing files to the first block of the partition
-                    partitioning.write_raw_files(location, temp_root, part,
-                                                 (part.extent.start - 1) *
-                                                 dev.sector_size)
+        # Write raw files to disk with dd
+        partitioning.process_raw_files(dev)
 
     @contextlib.contextmanager
     def mount_partition(self, location, offset_bytes, size_bytes):
