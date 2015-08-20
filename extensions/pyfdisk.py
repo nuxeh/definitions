@@ -143,9 +143,10 @@ class PartitionList(object):
                                     'contain Partition objects')
 
     def __iter__(self):
-        """Return self as an iterable object"""
+        """Return a copy of self as an iterable object"""
         self.__iter_index = 0
-        return self
+        copy = deepcopy(self)
+        return copy
 
     def __next__(self):
         """Return the next item in an iteration"""
@@ -188,8 +189,6 @@ class PartitionList(object):
         if current_list_hash == self.__cached_list_hash:
             return self.__cached_list
 
-        self.__cached_list_hash = current_list_hash
-
         part_list = deepcopy(self.__partition_list)
         used_numbers = set()
         fill_partitions = set(partition for partition in part_list
@@ -230,6 +229,7 @@ class PartitionList(object):
             part.number = num
             used_numbers.add(num)
 
+        self.__cached_list_hash = current_list_hash
         self.__cached_list = part_list
         return part_list
 
