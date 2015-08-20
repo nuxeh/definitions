@@ -462,7 +462,6 @@ class WriteExtension(Extension):
                                                 root_partition=root_num)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
-        # Move this?
         # Delete contents of partition mountpoints in the rootfs to leave an
         # empty mount drectory (files are copied to the actual partition
         # separately), or create an empty mount directory in the rootfs.
@@ -471,6 +470,8 @@ class WriteExtension(Extension):
                 part_mount_dir = os.path.join(system_dir,
                                      re.sub('^/', '', part.mountpoint))
                 if os.path.exists(part_mount_dir):
+                    self.status(msg='Deleting files in mountpoint '
+                                    'for %s partition' % part.mountpoint)
                     self.empty_dir(part_mount_dir)
                 else:
                     self.status(msg='Creating empty mount directory '
@@ -518,10 +519,10 @@ class WriteExtension(Extension):
     def move_or_copy_dir(self, source_dir, target_dir, copy=False):
         '''Move or copy all files source_dir, to target_dir'''
 
-        cmd = 'mv'
+        cmd = ['mv']
         act = 'Mov'
         if copy:
-            cmd = 'cp'
+            cmd = ['cp', '-a', '-r']
             act = 'Copy'
 
         files = []
@@ -531,7 +532,7 @@ class WriteExtension(Extension):
             self.status(msg='%sing data to %s' % (act, target_dir))
         for filename in files:
             filepath = os.path.join(source_dir, filename)
-            subprocess.check_call([cmd, filepath, target_dir])
+            subprocess.check_call(cmd + [filepath, target_dir])
 
     def empty_dir(self, directory):
         '''Empty the contents of a directory, but not the directory itself'''
@@ -869,9 +870,10 @@ class WriteExtension(Extension):
 
             self.status(msg='Mounting partition %d' % part.number)
             offset = part.extent.start * dev.sector_size
-            with self.mount_partition(location, offset) as part_mount_dir:
+            with self.mount_partition(location,
+                                      offset, part.size) as part_mount_dir:
                 if part.mountpoint == '/':
-                    # Install system
+                    # Install root filesystem
                     root_uuid = self.get_uuid(location, part.extent.start *
                                               dev.sector_size)
                     self.create_btrfs_system_layout(temp_root, part_mount_dir,
@@ -884,6 +886,7 @@ class WriteExtension(Extension):
                                      part.mountpoint)
                     self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
 
+            # TODO: move this to partitioning.py
             # Write raw files
             if hasattr(dev, 'raw_files'):
                 partitioning.write_raw_files(location, temp_root, dev)
@@ -897,9 +900,10 @@ class WriteExtension(Extension):
                                                  dev.sector_size)
 
     @contextlib.contextmanager
-    def mount_partition(self, location, offset_bytes):
+    def mount_partition(self, location, offset_bytes, size_bytes):
         """Mount a partition in a partitioned device or image"""
-        with pyfdisk.create_loopback(location, offset=offset_bytes) as loop:
+        with pyfdisk.create_loopback(location, offset=offset_bytes,
+                                     size=size_bytes) as loop:
             with self.mount(loop) as mountpoint:
                 yield mountpoint
 

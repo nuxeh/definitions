@@ -43,15 +43,17 @@ def do_partitioning(location, disk_size, temp_root, part_spec):
         writeexts.Extension.status(msg='Loaded partition specification: %s' %
                                         part_spec)
 
-        # FIXME: GPT currently not supported due to missing tools
+        # FIXME: GPT currently not fully supported due to missing tools
         if dev.partition_table_format.lower() == 'gpt':
-            raise writeexts.ExtensionError('GPT partition tables are not '
-                                           'currently supported')
+            writeexts.Extension.status(msg='WARNING: GPT partition tables '
+                                           'are not currently supported, '
+                                           'when using the extlinux '
+                                           'bootloader')
 
-        writeexts.Extension.status(msg=str(dev.partitionlist))
+        writeexts.Extension.status(msg='Summary:\n' + str(dev.partitionlist))
         writeexts.Extension.status(msg='Writing partition table')
         dev.commit()
-        dev.create_filesystems(skip=['/'])
+        dev.create_filesystems(skip=('/'))
     except (pyfdisk.PartitioningError, pyfdisk.FdiskError) as e:
         raise writeexts.ExtensionError(e.msg)
 
@@ -66,7 +68,6 @@ def do_partitioning(location, disk_size, temp_root, part_spec):
     mounted_partitions = set(part for part in dev.partitionlist
                              if hasattr(part, 'mountpoint'))
 
-    # Create root filesystem, and copy files to partitions
     for part in mounted_partitions:
         if not hasattr(part, 'filesystem'):
             raise writeexts.ExtensionError('Cannot mount a partition '
