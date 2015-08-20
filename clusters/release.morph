@@ -54,6 +54,7 @@ systems:
       KERNEL_ARGS: cma=256M console=tty0 console=ttyS0,115200n8 no_console_suspend=1
         nouveau.pstate=1
       HOSTNAME: build-system-armv7lhf-jetson
+      PARTITION_FILE: partitioning/jetson
 - morph: systems/genivi-baseline-system-x86_64-generic.morph
   deploy:
     genivi-baseline-system-x86_64-generic:
@@ -83,3 +84,4 @@ systems:
       KERNEL_ARGS: cma=256M console=tty0 console=ttyS0,115200n8 no_console_suspend=1
         nouveau.pstate=1
       HOSTNAME: genivi-baseline-system-armv7lhf-jetson
+      PARTITION_FILE: partitioning/jetson
