@@ -453,12 +453,16 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
             else:
-                disk_uuid = self.get_uuid(device.location, disk=True)
-                root_num = next(r.number for r in device.partitionlist
-                                         if hasattr(r, 'mountpoint')
-                                         and r.mountpoint == '/')
+                if device.partition_table_format.lower() in ('dos', 'mbr'):
+                    disk_uuid = self.get_uuid(device.location, disk=True)
+                    root_num = next(r.number for r in device.partitionlist
+                                             if hasattr(r, 'mountpoint')
+                                             and r.mountpoint == '/')
+                    part_uuid = '%s-%02d' % (disk_uuid, root_partition)
+                elif device.partition_table_format.lower() == 'gpt':
+                    part_uuid = root_uuid
                 self.generate_bootloader_config(mountpoint,
-                                                disk_uuid=disk_uuid,
+                                                root_uuid=part_uuid,
                                                 root_partition=root_num)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
@@ -691,16 +695,14 @@ class WriteExtension(Extension):
 
     def generate_extlinux_config(self, real_root,
                                  rootfs_uuid=None,
-                                 disk_uuid=None, root_partition=False):
+                                 root_uuid=None):
         '''Generate the extlinux configuration file
 
         Args:
             real_root: Path to the mounted top level of the root filesystem
             rootfs_uuid: Specify a filesystem UUID which can be loaded using
                          an initramfs
-            disk_uuid: Disk UUID, can be used without an initramfs
-            root_partition: Partition number of the boot partition if using
-                            disk_uuid
+            root_uuid: Disk UUID, can be used without an initramfs
         '''
 
         self.status(msg='Creating extlinux.conf')
@@ -720,11 +722,11 @@ class WriteExtension(Extension):
 
         if rootfs_uuid:
             root_device = 'UUID=%s' % rootfs_uuid
-        elif disk_uuid:
-            root_device = 'PARTUUID=%s-%02d' % (disk_uuid, root_partition)
+        elif root_uuid:
+            root_device = 'PARTUUID=%s' % root_uuid
         else:
             # Fall back to the root partition named in the cluster
-            root_device = '%s%d' % (self.get_root_device(), root_partition)
+            root_device = self.get_root_device()
         kernel_args += 'root=%s ' % root_device
 
         kernel_args += self.get_extra_kernel_args()
