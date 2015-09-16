@@ -249,7 +249,7 @@ class PartitionList(object):
         return len(self.__partition_list)
 
     def __setitem__(self, i, value):
-        """ Update the ith item in the list """
+        """Update the ith item in the list"""
         self.append(partition)
 
 
@@ -436,6 +436,12 @@ class Device(object):
                                     (self.partition_table_format.upper(),
                                      self.max_allowed_partitions))
 
+    def get_partition_by_mountpoint(self, mountpoint):
+        """Return a Partition with a specified mountpoint"""
+        return next(r for r in self.partitionlist
+            if hasattr(r, 'mountpoint')
+            and r.mountpoint == '/')
+
     def commit(self):
         """Write the partition table to the disk or image"""
         pt_format = self.partition_table_format.lower()
@@ -580,6 +586,15 @@ def __filter_fdisk_list_output(regex, location):
     else:
         raise PartitioningError('Error reading information from fdisk')
 
+def decode_human_size(size_string):
+    """Parse strings for human readable size factors"""
+
+    facts_of_1024 = ['', 'k', 'm', 'g', 't']
+    m = re.match('^(\d+)([kmgtKMGT]?)$', str(size_string))
+    if not m:
+        return size_string
+    return int(m.group(1)) * (1024 ** facts_of_1024.index(m.group(2).lower()))
+
 @contextlib.contextmanager
 def create_loopback(mount_path, offset=0, size=0):
     """
@@ -613,11 +628,62 @@ def create_loopback(mount_path, offset=0, size=0):
     finally:
         subprocess.check_call(['losetup', '-d', loop_device])
 
-def decode_human_size(size_string):
-    """Parse strings for human readable size factors"""
+def get_pt_uuid(location):
+    # TODO
+    """Read the partition UUID (MBR or GPT) for location (device or image)"""
+    return __filter_blkid_output('PTUUID=\"(.*?)\"')
 
-    facts_of_1024 = ['', 'k', 'm', 'g', 't']
-    m = re.match('^(\d+)([kmgtKMGT]?)$', str(size_string))
-    if not m:
-        return size_string
-    return int(m.group(1)) * (1024 ** facts_of_1024.index(m.group(2).lower()))
+def get_pt_type(location):
+    # TODO
+    """Read the partition type from a location (device or image)"""
+    return __filter_blkid_output('PTTYPE=\"(.*?)\"')
+
+def __filter_blkid_output(regex, location):
+    # TODO
+    r = re.compile(regex, re.DOTALL)
+    m = re.findall(r, subprocess.check_output(['blkid', '-p', location]))
+    if m:
+        return m
+    else:
+        raise PartitioningError('Error reading information from blkid')
+
+def get_partition_guid(partition, location):
+    """
+    Get a partition's GUID from a GPT partition table
+
+    This is read directly from the partition table, since current fdisk does
+    not support reading GPT partition GUIDS. It does not require special tools
+    (gfdisk).  This is the GUID which identifies the partition, created with
+    the partition table, as opposed to the filesystem UUID, created with the
+    filesystem. It is particularly useful for specifying the partition which
+    the Linux kernel can use on boot to find the root filesystem, e.g.  when
+    using the kernel command line "root=PARTUUID=$UUID"
+
+    Args:
+        partition: A partition object
+        location:  Location of the storage device containing the partition -
+                   an image or device node
+    Returns:
+        A GUID string, e.g. 'B342D1AB-4B65-4601-97DC-D6DF3FE2E95E'
+    """
+
+    sector_size = get_sector_size(location)
+    # The partition GUID is located two sectors (prot. MBR + GPT hdr.) plus
+    # 128 bytes for each partition entry in the table, plus 16 bytes for the
+    # location of the partition's GUID
+    guid_offset = (2 * sector_size) + (128 * partition.number) + 16
+    uuid_raw = subprocess.check_output(['xxd', '-s', guid_offset,
+                                        '-l', '16', '-p', location])
+    a = uuid_raw
+    return ('%s%s%s%s-%s%s-%s%s-%s-%s' %
+            (uuid_raw[6:8], uuid_raw[4:6], uuid_raw[2:4], uuid_raw[0:2],
+             uuid_raw[10:12], uuid_raw[8:10],
+             uuid_raw[14:16], uuid_raw[12:14],
+             uuid_raw[16:20], uuid_raw[20:32])).upper()
+
+def get_mbr_uuid(partition, location):
+    # TODO
+    """Get the NT disk signature for an MBR partition table"""
+        return subprocess.check_output(['blkid', '-s', 'PTUUID', '-o',
+                                        'value', '-p', '-O', str(offset),
+                                        location]).strip()
