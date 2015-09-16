@@ -376,7 +376,7 @@ class WriteExtension(Extension):
             else:
                 raise
 
-    def get_uuid(self, location, offset=0, disk=False):
+    def get_uuid(self, location, offset=0, uuid_type=False):
         '''Get the UUID of a block device's file system.
 
         Requires util-linux blkid; the busybox version ignores options and
@@ -389,9 +389,14 @@ class WriteExtension(Extension):
             disk: Boolean, if true, find the disk (partition table) UUID,
                   rather than a filesystem UUID. Offset has no effect.
         '''
-        if disk:
+        if uuid_type == 'pt':
+            # Whole disk UUID in partition table (MBR or GPT). Useful when
+            # booting a rootfs via kernel parameter 'root=PARTUUID-pn' where
+            # 'pn' is a zero-padded partition number - MBR only
             field = 'PTUUID'
         else:
+            # Filesystem UUID (with optional offset), as needed in fstab, or
+            # booting the kernel with an initramfs aware of filesystems
             field = 'UUID'
 
         return subprocess.check_output(['blkid', '-s', field, '-o',
@@ -453,22 +458,21 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
             else:
+                root_part = device.get_partition_by_mountpoint('/')
                 if device.partition_table_format.lower() in ('dos', 'mbr'):
-                    disk_uuid = self.get_uuid(device.location, disk=True)
-                    root_num = next(r.number for r in device.partitionlist
-                                             if hasattr(r, 'mountpoint')
-                                             and r.mountpoint == '/')
-                    part_uuid = '%s-%02d' % (disk_uuid, root_partition)
+                    disk_uuid = self.get_uuid(device.location, uuid_type='pt')
+                    part_uuid = '%s-%02d' % (disk_uuid, root_part.number)
                 elif device.partition_table_format.lower() == 'gpt':
-                    part_uuid = root_uuid
+                    part_uuid = pyfdisk.get_partition_guid(device, root_part)
                 self.generate_bootloader_config(mountpoint,
-                                                root_uuid=part_uuid,
-                                                root_partition=root_num)
+                                                root_guid=part_uuid)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
         # Delete contents of partition mountpoints in the rootfs to leave an
-        # empty mount drectory (files are copied to the actual partition
-        # separately), or create an empty mount directory in the rootfs.
+        # empty mount drectory (files are copied to the actual partition in
+        # create_partitioned_system()), or create an empty mount directory in
+        # the rootfs if the mount path doesn't exist.
+
         for part in device.partitionlist:
             if hasattr(part, 'mountpoint') and part.mountpoint != '/':
                 part_mount_dir = os.path.join(system_dir,
@@ -577,13 +581,13 @@ class WriteExtension(Extension):
             fstab.add_line('%s  / btrfs defaults,rw,noatime 0 1' % root_device)
 
         # Add fstab entries for partitions
-        partition_mounts = set()
         if device:
             mount_parts = set(p for p in device.partitionlist
                           if hasattr(p, 'mountpoint') and p.mountpoint != '/')
             part_mountpoints = set(p.mountpoint for p in mount_parts)
             for part in mount_parts:
                 if part.mountpoint not in existing_mounts:
+                    # Get filesystem UUID
                     part_uuid = self.get_uuid(device.location,
                                               part.extent.start *
                                               device.sector_size)
@@ -695,14 +699,16 @@ class WriteExtension(Extension):
 
     def generate_extlinux_config(self, real_root,
                                  rootfs_uuid=None,
-                                 root_uuid=None):
+                                 root_guid=None):
         '''Generate the extlinux configuration file
 
         Args:
             real_root: Path to the mounted top level of the root filesystem
+
             rootfs_uuid: Specify a filesystem UUID which can be loaded using
-                         an initramfs
-            root_uuid: Disk UUID, can be used without an initramfs
+                         an initramfs aware of filesystems
+            root_uuid: Specify a partition GUID, can be used without an
+                       initramfs
         '''
 
         self.status(msg='Creating extlinux.conf')
@@ -720,9 +726,14 @@ class WriteExtension(Extension):
                                 # faster when specified without initramfs
             'rootflags=subvol=systems/default/run ') # boot runtime subvol
 
+
+        # See init/do_mounts.c:182 in the kernel source, in the comment above
+        # function name_to_dev_t(), for an explanation of the available
+        # options for the kernel parameter 'root', particularly when using
+        # GUID/UUIDs
         if rootfs_uuid:
             root_device = 'UUID=%s' % rootfs_uuid
-        elif root_uuid:
+        elif root_guid:
             root_device = 'PARTUUID=%s' % root_uuid
         else:
             # Fall back to the root partition named in the cluster
