@@ -16,13 +16,16 @@
 """
 A simple Python wrapper for fdisk
 
- * Intended to have as few dependencies as possible, beyond command line fdisk
- * Intended to work on Linux, though may work on other operating systems with
+ * Intends to have as few dependencies as possible, beyond command line fdisk
+ * Intends to work on Linux, though may work on other operating systems with
    fdisk from util-linux.
+ * Provides for the creation of MBR and GPT partitioned images or devices
+ * Includes some utility functions for reading information from existing
+   partition tables
 
 Caveats:
  * Designed to cater for disks using 4096 byte sectors, although this hasn't
-   yet been tested.
+   been tested yet.
 """
 
 import contextlib
@@ -510,12 +513,12 @@ class Device(object):
             raise FdiskError('"%s"' % ' '.join(str(x) for x in errors))
 
     def get_partition_uuid(self, partition):
-    """Read a partition's UUID from disk (MBR or GPT)"""
+        """Read a partition's UUID from disk (MBR or GPT)"""
 
-    if self.partition_table_format == 'gpt':
-        return get_partition_gpt_guid(partition, self.location)
-    elif self.partition_table_format == 'mbr':
-        return get_partition_mbr_uuid(partition, self.location)
+        if self.partition_table_format == 'gpt':
+            return get_partition_gpt_guid(partition, self.location)
+        elif self.partition_table_format == 'mbr':
+            return get_partition_mbr_uuid(partition, self.location)
 
     def create_filesystems(self, skip=None):
         """Create filesystems on the disk or image
@@ -597,7 +600,6 @@ def get_partition_offsets(location):
     """Return an array of the partition start sectors in a device or image"""
 
     return __get_fdisk_list_numeric_column(location, 1)
-    # Check pt type (==none)  and return [0] if not partitioned
 
 def get_partition_sizes(location):
     """Return an array of sizes of partitions in a device or image in sectors"""
@@ -662,7 +664,12 @@ def create_loopback(mount_path, offset=0, size=0):
 def get_pt_type(location):
     """Read the partition table type from location (device or image)"""
 
-    return __get_blkid_output('PTTYPE').lower()
+     pt_type = __get_blkid_output('PTTYPE').lower()
+     return 'none' if pt_type == '' else pt_type
+
+def __get_blkid_output(field):
+    return subprocess.check_output(['blkid', '-p', '-o', 'value',
+                                    '-s', field, location]).rstrip()
 
 def get_partition_uuid(partition, location):
     """Read the partition UUID (MBR or GPT) for location (device or image)"""
@@ -693,10 +700,6 @@ def get_partition_mbr_uuid(partition, location):
 
     pt_uuid = __get_blkid_output('PTUUID').upper()
     return '%s-%02d' % (pt_uuid, partition.number)
-
-def __get_blkid_output(field):
-    return subprocess.check_output(['blkid', '-p', '-o', 'value',
-                                    '-s', field, location]).rstrip()
 
 def get_partition_gpt_guid(partition, location):
     """
