@@ -694,16 +694,14 @@ class WriteExtension(Extension):
                 'Invalid BOOTLOADER_CONFIG_FORMAT %s' % config_type)
 
     def generate_extlinux_config(self, real_root,
-                                 rootfs_uuid=None,
-                                 root_guid=None):
+                                 rootfs_uuid=None, root_guid=None):
         '''Generate the extlinux configuration file
 
         Args:
             real_root: Path to the mounted top level of the root filesystem
-
             rootfs_uuid: Specify a filesystem UUID which can be loaded using
                          an initramfs aware of filesystems
-            root_uuid: Specify a partition GUID, can be used without an
+            root_guid: Specify a partition GUID, can be used without an
                        initramfs
         '''
 
@@ -721,7 +719,6 @@ class WriteExtension(Extension):
             'rootfstype=btrfs ' # required when using initramfs, also boots
                                 # faster when specified without initramfs
             'rootflags=subvol=systems/default/run ') # boot runtime subvol
-
 
         # See init/do_mounts.c:182 in the kernel source, in the comment above
         # function name_to_dev_t(), for an explanation of the available
@@ -922,6 +919,10 @@ class WriteExtension(Extension):
         Returns:
             A path to the mount point of the mounted Baserock rootfs
         '''
+
+        if pyfdisk.get_pt_type(location) == 'none':
+            with self.mount(location) as mountpoint:
+                yield mountpoint
 
         sector_size = pyfdisk.get_sector_size(location)
         partn_sizes = pyfdisk.get_partition_sizes(location)
