@@ -900,7 +900,8 @@ class WriteExtension(Extension):
 
     @contextlib.contextmanager
     def mount_partition(self, location, offset_bytes, size_bytes):
-        """Mount a partition in a partitioned device or image"""
+        '''Mount a partition in a partitioned device or image'''
+
         with pyfdisk.create_loopback(location, offset=offset_bytes,
                                      size=size_bytes) as loop:
             with self.mount(loop) as mountpoint:
@@ -908,14 +909,32 @@ class WriteExtension(Extension):
 
     @contextlib.contextmanager
     def find_and_mount_rootfs(self, location):
-        """Find a Baserock rootfs in a partitioned device or image"""
+        '''
+        Mount a Baserock rootfs inside a partitioned device or image
+
+        This function searches a disk image or device, with unknown
+        partitioning scheme, for a Baserock rootfs. This is done by finding
+        offsets and sizes of partitions in the partition table, mounting each
+        partition, and checking whether a known path exists in the mount.
+
+        Args:
+            location: the location of the disk image or device to search
+        Returns:
+            A path to the mount point of the mounted Baserock rootfs
+        '''
+
         sector_size = pyfdisk.get_sector_size(location)
-        for offset in pyfdisk.get_disk_offsets(location):
-            # needs size
-            with self.mount_partition(location, offset * sector_size) as mp:
-                path = os.path.join(mp, 'systems/default/orig/baserock')
-                if os.path.exists(path):
-                    self.status(msg='Found a Baserock rootfs at '
-                                    'offset %d sectors/%d bytes' %
-                                     (offset, offset * sector_size))
-                    yield mp
+        partn_sizes = pyfdisk.get_partition_sizes(location)
+        for i, offset in enumerate(pyfdisk.get_partition_offsets(location)):
+            try:
+                with self.mount_partition(location, offset * sector_size,
+                                          partn_sizes[i] * sector_size) as mp:
+                    path = os.path.join(mp, 'systems/default/orig/baserock')
+                    if os.path.exists(path):
+                        self.status(msg='Found a Baserock rootfs at '
+                                        'offset %d sectors/%d bytes' %
+                                         (offset, offset * sector_size))
+                        yield mp
+            except BaseException:
+                # Probably a partition without a filesystem, carry on
+                pass
