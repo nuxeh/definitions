@@ -418,6 +418,7 @@ class Device(object):
         Args:
             partitions: A list of partition keyword attributes
         """
+
         self.partitionlist = PartitionList(self)
         if partitions:
             self.partitions = partitions
@@ -432,6 +433,7 @@ class Device(object):
         Args:
             partition: a Partition class
         """
+
         if len(self.partitionlist) < self.max_allowed_partitions:
             self.partitionlist.append(partition)
         else:
@@ -442,12 +444,14 @@ class Device(object):
 
     def get_partition_by_mountpoint(self, mountpoint):
         """Return a Partition with a specified mountpoint"""
+
         return next(r for r in self.partitionlist
             if hasattr(r, 'mountpoint')
             and r.mountpoint == '/')
 
     def commit(self):
         """Write the partition table to the disk or image"""
+
         pt_format = self.partition_table_format.lower()
         print("Creating %s partition table on %s" %
                         (pt_format.upper(), self.location))
@@ -520,6 +524,7 @@ class Device(object):
             skipping: A list of strings denoting partitions to skip filesystem
             creation on, for example if custom settings are required
         """
+
         for part in self.partitionlist:
             if hasattr(part, 'mountpoint') and part.mountpoint in skip:
                 continue
@@ -570,6 +575,7 @@ def load_yaml(location, size, yaml_file):
     Returns:
         A Device object
     """
+
     with open(yaml_file, 'r') as f:
         kwargs = yaml.safe_load(f)
     return Device(location, size, **kwargs)
@@ -577,18 +583,30 @@ def load_yaml(location, size, yaml_file):
 
 def get_sector_size(location):
     """Get the logical sector size of a block device or image, in bytes"""
+
     return int(__filter_fdisk_list_output('Sector size.*?(\d+) bytes',
                                           location)[0])
 
 def get_disk_size(location):
     """Get the total size of a block device or image, in bytes"""
+
     return int(__filter_fdisk_list_output('Disk.*?(\d+) bytes',
                                           location)[0])
 
-def get_disk_offsets(location):
+def get_partition_offsets(location):
     """Return an array of the partition start sectors in a device or image"""
-    return map(int, __filter_fdisk_list_output('%s\d+[\s*]+(\d+)' % location,
-                                               location))
+
+    return __get_fdisk_list_numeric_column(location, 1)
+    # Check pt type (==none)  and return [0] if not partitioned
+
+def get_partition_sizes(location):
+    """Return an array of sizes of partitions in a device or image in sectors"""
+
+    return __get_fdisk_list_numeric_column(location, 3)
+
+def __get_fdisk_list_numeric_column(location, column):
+    return map(int, __filter_fdisk_list_output('%s(?:\d+\s+){%d}(\d+)' %
+                                                (location, column), location))
 
 def __filter_fdisk_list_output(regex, location):
     r = re.compile(regex, re.DOTALL)
@@ -673,7 +691,7 @@ def get_partition_mbr_uuid(partition, location):
         A UUID referring to an MBR partition, e.g. '97478dab-02'
     """
 
-    pt_uuid = __get_blkid_output('PTUUID')
+    pt_uuid = __get_blkid_output('PTUUID').upper()
     return '%s-%02d' % (pt_uuid, partition.number)
 
 def __get_blkid_output(field):
@@ -707,9 +725,9 @@ def get_partition_gpt_guid(partition, location):
     guid_offset = (2 * sector_size) + (128 * (partition.number - 1)) + 16
     uuid_raw = subprocess.check_output(['xxd', '-s', guid_offset,
                                         '-l', '16', '-p', location])
-    a = uuid_raw
+    a = uuid_raw.upper()
     return ('%s%s%s%s-%s%s-%s%s-%s-%s' %
-            (uuid_raw[6:8], uuid_raw[4:6], uuid_raw[2:4], uuid_raw[0:2],
-             uuid_raw[10:12], uuid_raw[8:10],
-             uuid_raw[14:16], uuid_raw[12:14],
-             uuid_raw[16:20], uuid_raw[20:32])).upper()
+            (a[6:8], a[4:6], a[2:4], a[0:2],
+             a[10:12], a[8:10],
+             a[14:16], a[12:14],
+             a[16:20], a[20:32]))
