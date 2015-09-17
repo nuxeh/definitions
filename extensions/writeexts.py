@@ -459,11 +459,7 @@ class WriteExtension(Extension):
                                                 rootfs_uuid=rootfs_uuid)
             else:
                 root_part = device.get_partition_by_mountpoint('/')
-                if device.partition_table_format.lower() in ('dos', 'mbr'):
-                    disk_uuid = self.get_uuid(device.location, uuid_type='pt')
-                    part_uuid = '%s-%02d' % (disk_uuid, root_part.number)
-                elif device.partition_table_format.lower() == 'gpt':
-                    part_uuid = pyfdisk.get_partition_guid(device, root_part)
+                part_uuid = device.get_partition_uuid(root_part)
                 self.generate_bootloader_config(mountpoint,
                                                 root_guid=part_uuid)
             self.install_bootloader(mountpoint, system_dir, device.location)
@@ -915,6 +911,7 @@ class WriteExtension(Extension):
         """Find a Baserock rootfs in a partitioned device or image"""
         sector_size = pyfdisk.get_sector_size(location)
         for offset in pyfdisk.get_disk_offsets(location):
+            # needs size
             with self.mount_partition(location, offset * sector_size) as mp:
                 path = os.path.join(mp, 'systems/default/orig/baserock')
                 if os.path.exists(path):
