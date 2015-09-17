@@ -14,11 +14,15 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-A simple Python wrapper for command line fdisk.
+A simple Python wrapper for fdisk
 
-It is intended to work on Linux, though may work on other operating
-systems using fdisk from util-linux.
+ * Intended to have as few dependencies as possible, beyond command line fdisk
+ * Intended to work on Linux, though may work on other operating systems with
+   fdisk from util-linux.
 
+Caveats:
+ * Designed to cater for disks using 4096 byte sectors, although this hasn't
+   yet been tested.
 """
 
 import contextlib
@@ -494,12 +498,20 @@ class Device(object):
 
         errors = output[1].split('\n')[1:-1]
         if errors:
-            # Note that the message saying 'disk does not contain a valid
-            # partition table' is never an error, it's a status message
-            # printed to stderr when fdisk starts with a blank device.
-            # Exception handling is done like this since fdisk will not
-            # return a failure exit code if it finds problems with the input
+            # Exception handling is done in this way since fdisk will not
+            # return a failure exit code if it finds problems with its input.
+            # Note that the message 'disk does not contain a valid partition
+            # table' is not an error, it's a status message printed to stderr
+            # when fdisk starts with a blank device.
             raise FdiskError('"%s"' % ' '.join(str(x) for x in errors))
+
+    def get_partition_uuid(self, partition):
+    """Read a partition's UUID from disk (MBR or GPT)"""
+
+    if self.partition_table_format == 'gpt':
+        return get_partition_gpt_guid(partition, self.location)
+    elif self.partition_table_format == 'mbr':
+        return get_partition_mbr_uuid(partition, self.location)
 
     def create_filesystems(self, skip=None):
         """Create filesystems on the disk or image
@@ -603,7 +615,9 @@ def create_loopback(mount_path, offset=0, size=0):
     Args:
         mount_path: String path to mount
         offset: Offset of the start of a partition in bytes (default 0)
-        size: Limits the size of the partition, in bytes (default 0)
+        size: Limits the size of the partition, in bytes (default 0). This is
+              important when creating filesystems, otherwise tools often
+              corrupt areas beyond the desired limits of the partition.
     Returns:
         The path to a created loopback device node
     """
@@ -615,11 +629,10 @@ def create_loopback(mount_path, offset=0, size=0):
         else:
             cmd = base_args + [mount_path]
         loop_device = subprocess.check_output(cmd).rstrip()
-        # Allow the system time to see the new device
-        # On some systems, mounts created on the loopdev
-        # too soon after creating the loopback device
-        # may be unreliable, even though the -P option
-        # (--partscan) is passed to losetup
+        # Allow the system time to see the new device On some systems, mounts
+        # created on the loopdev too soon after creating the loopback device
+        # may be unreliable, even though the -P option (--partscan) is passed
+        # to losetup
         time.sleep(1)
     except subprocess.CalledProcessError:
         PartitioningError('Error creating loopback')
@@ -628,26 +641,46 @@ def create_loopback(mount_path, offset=0, size=0):
     finally:
         subprocess.check_call(['losetup', '-d', loop_device])
 
-def get_pt_uuid(location):
-    # TODO
-    """Read the partition UUID (MBR or GPT) for location (device or image)"""
-    return __filter_blkid_output('PTUUID=\"(.*?)\"')
-
 def get_pt_type(location):
-    # TODO
-    """Read the partition type from a location (device or image)"""
-    return __filter_blkid_output('PTTYPE=\"(.*?)\"')
+    """Read the partition table type from location (device or image)"""
 
-def __filter_blkid_output(regex, location):
-    # TODO
-    r = re.compile(regex, re.DOTALL)
-    m = re.findall(r, subprocess.check_output(['blkid', '-p', location]))
-    if m:
-        return m
-    else:
-        raise PartitioningError('Error reading information from blkid')
+    return __get_blkid_output('PTTYPE').lower()
 
-def get_partition_guid(partition, location):
+def get_partition_uuid(partition, location):
+    """Read the partition UUID (MBR or GPT) for location (device or image)"""
+
+    pt_type = get_pt_type(location)
+    if pt_type == 'gpt':
+        return get_partition_gpt_guid(partition, location)
+    elif pt_type == 'mbr':
+        return get_partition_mbr_uuid(partition, location)
+
+def get_partition_mbr_uuid(partition, location):
+    """
+    Get a partition's UUID in a device using MBR partition table
+
+    In Linux, MBR partition UUIDs are comprised of the NT disk signature,
+    followed by '-' and a zero padded partition number. This is necessary since
+    the MBR does not provide per-partition GUIDs as GPT partition tables do.
+    This can be passed to the kernel with "root=PARTUUID=$UUID" to identify a
+    partition containing a root filesystem.
+
+    Args:
+        partition: A partition object
+        location:  Location of the storage device containing the partition -
+                   an image or device node
+    Returns:
+        A UUID referring to an MBR partition, e.g. '97478dab-02'
+    """
+
+    pt_uuid = __get_blkid_output('PTUUID')
+    return '%s-%02d' % (pt_uuid, partition.number)
+
+def __get_blkid_output(field):
+    return subprocess.check_output(['blkid', '-p', '-o', 'value',
+                                    '-s', field, location]).rstrip()
+
+def get_partition_gpt_guid(partition, location):
     """
     Get a partition's GUID from a GPT partition table
 
@@ -656,7 +689,7 @@ def get_partition_guid(partition, location):
     (gfdisk).  This is the GUID which identifies the partition, created with
     the partition table, as opposed to the filesystem UUID, created with the
     filesystem. It is particularly useful for specifying the partition which
-    the Linux kernel can use on boot to find the root filesystem, e.g.  when
+    the Linux kernel can use on boot to find the root filesystem, e.g. when
     using the kernel command line "root=PARTUUID=$UUID"
 
     Args:
@@ -668,10 +701,10 @@ def get_partition_guid(partition, location):
     """
 
     sector_size = get_sector_size(location)
-    # The partition GUID is located two sectors (prot. MBR + GPT hdr.) plus
-    # 128 bytes for each partition entry in the table, plus 16 bytes for the
-    # location of the partition's GUID
-    guid_offset = (2 * sector_size) + (128 * partition.number) + 16
+    # The partition GUID is located two sectors (protective MBR + GPT header)
+    # plus 128 bytes for each partition entry in the table, plus 16 bytes for
+    # the location of the partition's GUID
+    guid_offset = (2 * sector_size) + (128 * (partition.number - 1)) + 16
     uuid_raw = subprocess.check_output(['xxd', '-s', guid_offset,
                                         '-l', '16', '-p', location])
     a = uuid_raw
@@ -680,10 +713,3 @@ def get_partition_guid(partition, location):
              uuid_raw[10:12], uuid_raw[8:10],
              uuid_raw[14:16], uuid_raw[12:14],
              uuid_raw[16:20], uuid_raw[20:32])).upper()
-
-def get_mbr_uuid(partition, location):
-    # TODO
-    """Get the NT disk signature for an MBR partition table"""
-        return subprocess.check_output(['blkid', '-s', 'PTUUID', '-o',
-                                        'value', '-p', '-O', str(offset),
-                                        location]).strip()
