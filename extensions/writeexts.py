@@ -277,6 +277,7 @@ class WriteExtension(Extension):
         if self.get_environment_boolean('USE_PARTITIONING', 'yes'):
             self.create_partitioned_system(temp_root, location)
         else:
+            self.format_btrfs(location)
             self.create_system(temp_root, location)
 
     @contextlib.contextmanager
@@ -297,6 +298,16 @@ class WriteExtension(Extension):
         except BaseException:
             sys.stderr.write('Error creating disk image')
             raise
+
+    def create_system(self, temp_root, raw_disk):
+        with self.mount(raw_disk) as mp:
+            try:
+                self.create_btrfs_system_layout(
+                    temp_root, mp, version_label='factory',
+                    disk_uuid=self.get_uuid(raw_disk))
+            except BaseException as e:
+                sys.stderr.write('Error creating Btrfs system layout')
+                raise
 
     def _parse_size(self, size):
         '''Parse a size from a string.
@@ -460,23 +471,28 @@ class WriteExtension(Extension):
                 self.install_dtb(version_root, temp_root)
             self.install_syslinux_menu(mountpoint, version_root)
             if initramfs is not None:
+                # Using initramfs - can boot with a filesystem UUID
                 self.install_initramfs(initramfs, version_root)
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
+                # TODO: needs bootloader install?
             else:
                 if device:
+                    # A partitioned disk or image - boot with partition UUID
                     root_part = device.get_partition_by_mountpoint('/')
-                    part_uuid = device.get_partition_uuid(root_part)
+                    root_guid = device.get_partition_uuid(root_part)
+                    self.generate_bootloader_config(mountpoint,
+                                                    root_guid=root_guid)
+                    self.install_syslinux_blob(device.location, system_dir)
                 else:
-
-                self.generate_bootloader_config(mountpoint,
-                                                root_guid=part_uuid)
-            self.install_bootloader(mountpoint, system_dir, device.location)
+                    # Unpartitioned and no initramfs - cannot boot with a UUID
+                    self.generate_bootloader_config(mountpoint)
+            self.install_bootloader(mountpoint)
 
         if device:
             create_partition_mountpoints(device, system_dir)
 
-    def create_partition_mountpoints(device, system_dir):
+    def create_partition_mountpoints(self, device, system_dir):
         '''Create (or empty) partition mountpoints in the root filesystem
 
         Delete contents of partition mountpoints in the rootfs to leave an
@@ -770,19 +786,19 @@ class WriteExtension(Extension):
                 f.write('devicetree /systems/default/dtb\n')
             f.write('append %s\n' % kernel_args)
 
-    def install_bootloader(self, *args):
+    def install_bootloader(self, *args, **kwargs):
         install_function_dict = {
             'extlinux': self.install_bootloader_extlinux,
         }
 
         install_type = self.get_bootloader_install()
         if install_type in install_function_dict:
-            install_function_dict[install_type](*args)
+            install_function_dict[install_type](*args, **kwargs)
         elif install_type != 'none':
             raise ExtensionError(
                 'Invalid BOOTLOADER_INSTALL %s' % install_type)
 
-    def install_bootloader_extlinux(self, real_root, orig_root, location):
+    def install_bootloader_extlinux(self, real_root):
         self.status(msg='Installing extlinux')
         subprocess.check_call(['extlinux', '--install', real_root])
 
@@ -790,7 +806,16 @@ class WriteExtension(Extension):
         subprocess.check_call(['sync'])
         time.sleep(2)
 
-        # Install Syslinux MBR blob
+    def install_syslinux_blob(self, location, orig_root):
+        '''Install Syslinux MBR blob
+
+        This is the first stage of boot (for partitioned images) on x86
+        machines. It is not required where there is no partition table. The
+        syslinux bootloader is written to the MBR, and is capable of loading
+        extlinux. This only works when the partition is set as bootable (MBR),
+        or the legacy boot flag is set (GPT). The blob is built with extlinux,
+        and found in the rootfs'''
+
         self.status(msg='Installing syslinux MBR blob')
         mbr_blob_location = os.path.join(orig_root,
                             'usr/share/syslinux/mbr.bin')
