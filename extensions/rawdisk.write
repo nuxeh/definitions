@@ -47,11 +47,11 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
             try:
                 if not self.is_device(location):
                     with self.created_disk_image(location):
-                        self.create_partitioned_system(temp_root, location)
+                        self.create_baserock_system(temp_root, location)
                     self.status(msg='Disk image has been created at %s' %
                                      location)
                 else:
-                    self.create_partitioned_system(temp_root, location)
+                    self.create_baserock_system(temp_root, location)
                     self.status(msg='System deployed to %s' % location)
             except Exception:
                 self.status(msg='Failure to deploy system to %s' %
@@ -68,8 +68,8 @@ class RawDiskWriteExtension(writeexts.WriteExtension):
         except subprocess.CalledProcessError:
             pass
 
-        # Failed to mount a raw image, search for a Baserock root filesystem
-        # in the device's partitions
+        # At this point, we have failed to mount a raw image, so instead
+        # search for a Baserock root filesystem in the device's partitions
         with self.find_and_mount_rootfs(location) as mp:
             self.do_upgrade(mp, temp_root)
 

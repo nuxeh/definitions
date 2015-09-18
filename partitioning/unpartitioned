@@ -1,6 +1,0 @@
-partition_table_format: none
-start_offset: 0
-partitions:
-- description: root filesystem
-  filesystem: btrfs
-  size: fill

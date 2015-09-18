@@ -271,7 +271,13 @@ class WriteExtension(Extension):
         '''Create a raw system image locally.'''
 
         with self.created_disk_image(location):
+            self.create_baserock_system(temp_root, location)
+
+    def create_baserock_system(self, location, temp_root):
+        if self.get_environment_boolean('USE_PARTITIONING', 'yes'):
             self.create_partitioned_system(temp_root, location)
+        else:
+            self.create_system(temp_root, location)
 
     @contextlib.contextmanager
     def created_disk_image(self, location):
@@ -425,7 +431,7 @@ class WriteExtension(Extension):
             os.rmdir(mount_point)
 
     def create_btrfs_system_layout(self, temp_root, mountpoint, version_label,
-                                   rootfs_uuid, device):
+                                   rootfs_uuid, device=None):
         '''Separate base OS versions from state using subvolumes.
 
         '''
@@ -458,16 +464,30 @@ class WriteExtension(Extension):
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
             else:
-                root_part = device.get_partition_by_mountpoint('/')
-                part_uuid = device.get_partition_uuid(root_part)
+                if device:
+                    root_part = device.get_partition_by_mountpoint('/')
+                    part_uuid = device.get_partition_uuid(root_part)
+                else:
+
                 self.generate_bootloader_config(mountpoint,
                                                 root_guid=part_uuid)
             self.install_bootloader(mountpoint, system_dir, device.location)
 
-        # Delete contents of partition mountpoints in the rootfs to leave an
-        # empty mount drectory (files are copied to the actual partition in
-        # create_partitioned_system()), or create an empty mount directory in
-        # the rootfs if the mount path doesn't exist.
+        if device:
+            create_partition_mountpoints(device, system_dir)
+
+    def create_partition_mountpoints(device, system_dir):
+        '''Create (or empty) partition mountpoints in the root filesystem
+
+        Delete contents of partition mountpoints in the rootfs to leave an
+        empty mount drectory (files are copied to the actual partition in
+        create_partitioned_system()), or create an empty mount directory in
+        the rootfs if the mount path doesn't exist.
+
+        Args:
+            device: A pyfdisk.py Device object describing the partitioning
+            system_dir: A path to the Baserock rootfs to be modified
+        '''
 
         for part in device.partitionlist:
             if hasattr(part, 'mountpoint') and part.mountpoint != '/':
@@ -518,34 +538,39 @@ class WriteExtension(Extension):
         os.chmod(subvolume, 0o755)
 
         existing_state_dir = os.path.join(system_dir, state_subdir)
-        self.move_or_copy_dir(existing_state_dir, subvolume)
+        self.move_dir_contents(existing_state_dir, subvolume)
 
-    def move_or_copy_dir(self, source_dir, target_dir, copy=False):
-        '''Move or copy all files source_dir, to target_dir'''
+    def move_dir_contents(self, source_dir, target_dir):
+        '''Move all files source_dir, to target_dir'''
 
-        cmd = ['mv']
-        act = 'Mov'
-        if copy:
-            cmd = ['cp', '-a', '-r']
-            act = 'Copy'
+        n = __cmd_files_in_dir(['mv'], source_dir, target_dir)
+        if n:
+            self.status(msg='Copied %d files to %s' % (n, target_dir))
 
-        files = []
-        if os.path.exists(source_dir):
-            files = os.listdir(source_dir)
-        if len(files) > 0:
-            self.status(msg='%sing data to %s' % (act, target_dir))
-        for filename in files:
-            filepath = os.path.join(source_dir, filename)
-            subprocess.check_call(cmd + [filepath, target_dir])
+    def copy_dir_contents(self, source_dir, target_dir):
+        '''Copy all files source_dir, to target_dir'''
+
+        n = self.__cmd_files_in_dir(['cp', '-a', '-r'], source_dir, target_dir)
+        if n:
+            self.status(msg='Moved %d files to %s' % (n, target_dir))
 
     def empty_dir(self, directory):
         '''Empty the contents of a directory, but not the directory itself'''
+
+        n = self.__cmd_files_in_dir(['rm', '-rf'], source_dir)
+        if n:
+            self.status(msg='Deleted %d files in %s' % (n, source_dir))
+
+    def __cmd_files_in_dir(self, cmd, source_dir, target_dir=None):
         files = []
-        if os.path.exists(directory):
-            files = os.listdir(directory)
+        if os.path.exists(source_dir):
+            files = os.listdir(source_dir)
         for filename in files:
-            filepath = os.path.join(directory, filename)
-            subprocess.check_call(['rm', '-rf', filepath])
+            filepath = os.path.join(source_dir, filename)
+            add_params = [filepath, target_dir] if target_dir else [filepath]
+            #subprocess.check_call(cmd + add_params)
+            print cmd + add_params
+        return len(files)
 
     def complete_fstab_for_btrfs_layout(self, system_dir,
                                         rootfs_uuid=None, device=None):
@@ -819,13 +844,13 @@ class WriteExtension(Extension):
 
         return True
 
-    def get_environment_boolean(self, variable):
+    def get_environment_boolean(self, variable, default='no'):
         '''Parse a yes/no boolean passed through the environment.'''
 
-        value = os.environ.get(variable, 'no').lower()
-        if value in ['no', '0', 'false']:
+        value = os.environ.get(variable, default).lower()
+        if value in ('no', '0', 'false'):
             return False
-        elif value in ['yes', '1', 'true']:
+        elif value in ('yes', '1', 'true'):
             return True
         else:
             raise ExtensionError('Unexpected value for %s: %s' %
@@ -890,7 +915,7 @@ class WriteExtension(Extension):
                                            re.sub('^/', '', part.mountpoint))
                     self.status(msg='Copying files to %s partition' %
                                      part.mountpoint)
-                    self.move_or_copy_dir(src_dir, part_mount_dir, copy=True)
+                    self.copy_dir_contents(src_dir, part_mount_dir)
 
         # Write raw files to disk with dd
         partitioning.process_raw_files(dev)

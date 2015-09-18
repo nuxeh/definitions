@@ -520,12 +520,13 @@ class Device(object):
         elif self.partition_table_format == 'mbr':
             return get_partition_mbr_uuid(partition, self.location)
 
-    def create_filesystems(self, skip=None):
+    def create_filesystems(self, skip=[]):
         """Create filesystems on the disk or image
 
         Args:
-            skipping: A list of strings denoting partitions to skip filesystem
-            creation on, for example if custom settings are required
+            skip: An iterable of mountpoints identifying partitions to skip
+                  filesystem creation on, for example if custom settings are
+                  required
         """
 
         for part in self.partitionlist:
@@ -664,8 +665,8 @@ def create_loopback(mount_path, offset=0, size=0):
 def get_pt_type(location):
     """Read the partition table type from location (device or image)"""
 
-     pt_type = __get_blkid_output('PTTYPE').lower()
-     return 'none' if pt_type == '' else pt_type
+    pt_type = __get_blkid_output('PTTYPE').lower()
+    return 'none' if pt_type == '' else pt_type
 
 def __get_blkid_output(field):
     return subprocess.check_output(['blkid', '-p', '-o', 'value',
