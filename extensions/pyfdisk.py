@@ -34,7 +34,7 @@ import re
 import subprocess
 import time
 import yaml
-
+import traceback
 
 class Extent(object):
     """
@@ -617,6 +617,7 @@ def __filter_fdisk_list_output(regex, location):
     if m:
         return m
     else:
+        traceback.print_stack(file=sys.stdout)
         raise PartitioningError('Error reading information from fdisk')
 
 def decode_human_size(size_string):
