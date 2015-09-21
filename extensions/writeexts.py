@@ -576,7 +576,7 @@ class WriteExtension(Extension):
 
         n = self.__cmd_files_in_dir(['rm', '-rf'], directory)
         if n:
-            self.status(msg='Deleted %d files in %s' % (n, source_dir))
+            self.status(msg='Deleted %d files in %s' % (n, directory))
 
     def __cmd_files_in_dir(self, cmd, source_dir, target_dir=None):
         files = []
