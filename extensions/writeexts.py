@@ -574,7 +574,7 @@ class WriteExtension(Extension):
     def empty_dir(self, directory):
         '''Empty the contents of a directory, but not the directory itself'''
 
-        n = self.__cmd_files_in_dir(['rm', '-rf'], source_dir)
+        n = self.__cmd_files_in_dir(['rm', '-rf'], directory)
         if n:
             self.status(msg='Deleted %d files in %s' % (n, source_dir))
 
