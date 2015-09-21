@@ -273,7 +273,7 @@ class WriteExtension(Extension):
         with self.created_disk_image(location):
             self.create_baserock_system(temp_root, location)
 
-    def create_baserock_system(self, location, temp_root):
+    def create_baserock_system(self, temp_root, location):
         if self.get_environment_boolean('USE_PARTITIONING', 'yes'):
             self.create_partitioned_system(temp_root, location)
         else:

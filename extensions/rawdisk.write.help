@@ -78,5 +78,15 @@ help: |
 
         (See https://www.kernel.org/doc/Documentation/kernel-parameters.txt)
 
+    * PARTITION_FILE=path: path to a YAML partition specification to use for
+      producing partitioned disks or devices. The default specification is
+      'partitioning/default' in definitions, which specifies a single
+      partition device. This may serve as an example of the format of this
+      file, or check the pyfdisk.py documentation.
+
+    * USE_PARTITIONING=boolean (default: yes) Use this flag to override
+      partitioning, to produce disk images or devices only containing a
+      filesystem.
+
     (See `morph help deploy` for details of how to pass parameters to write
     extensions)
