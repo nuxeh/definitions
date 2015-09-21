@@ -483,7 +483,7 @@ class WriteExtension(Extension):
                     root_guid = device.get_partition_uuid(root_part)
                     self.generate_bootloader_config(mountpoint,
                                                     root_guid=root_guid)
-                    if get_bootloader_install() == 'extlinux':
+                    if self.get_bootloader_install() == 'extlinux':
                         self.install_syslinux_blob(device, system_dir)
                 else:
                     # Unpartitioned and no initramfs - cannot boot with a UUID
