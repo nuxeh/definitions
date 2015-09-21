@@ -727,7 +727,7 @@ def get_partition_gpt_guid(partition, location):
     # plus 128 bytes for each partition entry in the table, plus 16 bytes for
     # the location of the partition's GUID
     guid_offset = (2 * sector_size) + (128 * (partition.number - 1)) + 16
-    uuid_raw = subprocess.check_output(['xxd', '-s', guid_offset,
+    uuid_raw = subprocess.check_output(['xxd', '-s', str(guid_offset),
                                         '-l', '16', '-p', location])
     a = uuid_raw.upper()
     return ('%s%s%s%s-%s%s-%s%s-%s-%s' %
