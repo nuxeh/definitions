@@ -471,7 +471,7 @@ class WriteExtension(Extension):
                 self.install_dtb(version_root, temp_root)
             self.install_syslinux_menu(mountpoint, version_root)
             if initramfs is not None:
-                # Using initramfs - can boot with a filesystem UUID
+                # Using initramfs - can boot a rootfs with a filesystem UUID
                 self.install_initramfs(initramfs, version_root)
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
@@ -483,7 +483,8 @@ class WriteExtension(Extension):
                     root_guid = device.get_partition_uuid(root_part)
                     self.generate_bootloader_config(mountpoint,
                                                     root_guid=root_guid)
-                    self.install_syslinux_blob(device.location, system_dir)
+                    if get_bootloader_install() == 'extlinux':
+                        self.install_syslinux_blob(device, system_dir)
                 else:
                     # Unpartitioned and no initramfs - cannot boot with a UUID
                     self.generate_bootloader_config(mountpoint)
@@ -806,7 +807,7 @@ class WriteExtension(Extension):
         subprocess.check_call(['sync'])
         time.sleep(2)
 
-    def install_syslinux_blob(self, location, orig_root):
+    def install_syslinux_blob(self, device, orig_root):
         '''Install Syslinux MBR blob
 
         This is the first stage of boot (for partitioned images) on x86
@@ -816,11 +817,16 @@ class WriteExtension(Extension):
         or the legacy boot flag is set (GPT). The blob is built with extlinux,
         and found in the rootfs'''
 
-        self.status(msg='Installing syslinux MBR blob')
-        mbr_blob_location = os.path.join(orig_root,
-                            'usr/share/syslinux/mbr.bin')
-        subprocess.check_call(['dd', 'if=%s' % mbr_blob_location,
-                                     'of=%s' % location,
+        pt_format = device.partition_table_format.lower()
+        if pt_format in ('gpb', 'mbr'):
+            blob = 'mbr.bin'
+        elif pt_format == 'gpt':
+            blob = 'gptmbr.bin'
+        blob_name = 'usr/share/syslinux/' + blob
+        self.status(msg='Installing syslinux %s blob' % pt_format.upper())
+        blob_location = os.path.join(orig_root, blob_name)
+        subprocess.check_call(['dd', 'if=%s' % blob_location,
+                                     'of=%s' % device.location,
                                      'bs=440', 'count=1', 'conv=notrunc'])
 
     def install_syslinux_menu(self, real_root, version_root):
