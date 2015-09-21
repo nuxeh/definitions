@@ -304,7 +304,7 @@ class WriteExtension(Extension):
             try:
                 self.create_btrfs_system_layout(
                     temp_root, mp, version_label='factory',
-                    disk_uuid=self.get_uuid(raw_disk))
+                    rootfs_uuid=self.get_uuid(raw_disk))
             except BaseException as e:
                 sys.stderr.write('Error creating Btrfs system layout')
                 raise
@@ -475,7 +475,7 @@ class WriteExtension(Extension):
                 self.install_initramfs(initramfs, version_root)
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
-                # TODO: needs bootloader install?
+                # FIXME: needs bootloader install?
             else:
                 if device:
                     # A partitioned disk or image - boot with partition UUID
@@ -768,7 +768,7 @@ class WriteExtension(Extension):
         if rootfs_uuid:
             root_device = 'UUID=%s' % rootfs_uuid
         elif root_guid:
-            root_device = 'PARTUUID=%s' % root_uuid
+            root_device = 'PARTUUID=%s' % root_guid
         else:
             # Fall back to the root partition named in the cluster
             root_device = self.get_root_device()
@@ -930,10 +930,10 @@ class WriteExtension(Extension):
                                       offset, part.size) as part_mount_dir:
                 if part.mountpoint == '/':
                     # Install root filesystem
-                    root_uuid = self.get_uuid(location, part.extent.start *
-                                              dev.sector_size)
+                    rfs_uuid = self.get_uuid(location, part.extent.start *
+                                                dev.sector_size)
                     self.create_btrfs_system_layout(temp_root, part_mount_dir,
-                                                    'factory', root_uuid, dev)
+                                                    'factory', rfs_uuid, dev)
                 else:
                     # Copy files to partition from unpacked rootfs
                     src_dir = os.path.join(temp_root,
