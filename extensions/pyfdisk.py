@@ -665,10 +665,10 @@ def create_loopback(mount_path, offset=0, size=0):
 def get_pt_type(location):
     """Read the partition table type from location (device or image)"""
 
-    pt_type = __get_blkid_output('PTTYPE').lower()
+    pt_type = __get_blkid_output('PTTYPE', location).lower()
     return 'none' if pt_type == '' else pt_type
 
-def __get_blkid_output(field):
+def __get_blkid_output(field, location):
     return subprocess.check_output(['blkid', '-p', '-o', 'value',
                                     '-s', field, location]).rstrip()
 
@@ -699,7 +699,7 @@ def get_partition_mbr_uuid(partition, location):
         A UUID referring to an MBR partition, e.g. '97478dab-02'
     """
 
-    pt_uuid = __get_blkid_output('PTUUID').upper()
+    pt_uuid = __get_blkid_output('PTUUID', location).upper()
     return '%s-%02d' % (pt_uuid, partition.number)
 
 def get_partition_gpt_guid(partition, location):
@@ -727,9 +727,12 @@ def get_partition_gpt_guid(partition, location):
     # plus 128 bytes for each partition entry in the table, plus 16 bytes for
     # the location of the partition's GUID
     guid_offset = (2 * sector_size) + (128 * (partition.number - 1)) + 16
-    uuid_raw = subprocess.check_output(['xxd', '-s', str(guid_offset),
-                                        '-l', '16', '-p', location])
-    a = uuid_raw.upper()
+
+    with open(location, 'rb') as f:
+        f.seek(guid_offset)
+        raw_uuid_bin = f.read(16)
+
+    a = str(raw_uuid_bin).upper()
     return ('%s%s%s%s-%s%s-%s%s-%s-%s' %
             (a[6:8], a[4:6], a[2:4], a[0:2],
              a[10:12], a[8:10],
