@@ -559,7 +559,7 @@ class WriteExtension(Extension):
     def move_dir_contents(self, source_dir, target_dir):
         '''Move all files source_dir, to target_dir'''
 
-        n = __cmd_files_in_dir(['mv'], source_dir, target_dir)
+        n = self.__cmd_files_in_dir(['mv'], source_dir, target_dir)
         if n:
             self.status(msg='Copied %d files to %s' % (n, target_dir))
 
