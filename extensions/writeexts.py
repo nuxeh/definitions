@@ -491,7 +491,7 @@ class WriteExtension(Extension):
             self.install_bootloader(mountpoint)
 
         if device:
-            create_partition_mountpoints(device, system_dir)
+            self.create_partition_mountpoints(device, system_dir)
 
     def create_partition_mountpoints(self, device, system_dir):
         '''Create (or empty) partition mountpoints in the root filesystem
