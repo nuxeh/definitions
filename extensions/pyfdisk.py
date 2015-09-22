@@ -515,10 +515,8 @@ class Device(object):
     def get_partition_uuid(self, partition):
         """Read a partition's UUID from disk (MBR or GPT)"""
 
-        if self.partition_table_format == 'gpt':
-            return get_partition_gpt_guid(partition, self.location)
-        elif self.partition_table_format == 'mbr':
-            return get_partition_mbr_uuid(partition, self.location)
+        return get_partition_uuid(self.location, partition.number,
+                                  self.partition_table_format)
 
     def create_filesystems(self, skip=[]):
         """Create filesystems on the disk or image
@@ -672,24 +670,33 @@ def __get_blkid_output(field, location):
     return subprocess.check_output(['blkid', '-p', '-o', 'value',
                                     '-s', field, location]).rstrip()
 
-def get_partition_uuid(partition, location):
-    """Read the partition UUID (MBR or GPT) for location (device or image)"""
+def get_partition_uuid(location, part_num, pt_type=None):
+    """
+    Read the partition UUID (MBR or GPT) for location (device or image)
 
-    pt_type = get_pt_type(location)
+    Args:
+        location: Path to device or image
+        part_num: Integer number of the partition
+        pt_type:  The partition table format (MBR or GPT)
+    """
+
+    if not pt_type:
+        pt_type = get_pt_type(location)
     if pt_type == 'gpt':
-        return get_partition_gpt_guid(partition, location)
+        return get_partition_gpt_guid(location, part_num)
     elif pt_type == 'mbr':
-        return get_partition_mbr_uuid(partition, location)
+        return get_partition_mbr_uuid(location, part_num)
 
-def get_partition_mbr_uuid(partition, location):
+def get_partition_mbr_uuid(location, part_num):
     """
     Get a partition's UUID in a device using MBR partition table
 
     In Linux, MBR partition UUIDs are comprised of the NT disk signature,
-    followed by '-' and a zero padded partition number. This is necessary since
-    the MBR does not provide per-partition GUIDs as GPT partition tables do.
-    This can be passed to the kernel with "root=PARTUUID=$UUID" to identify a
-    partition containing a root filesystem.
+    followed by '-' and a two digit, zero-padded partition number. This is
+    necessary since the MBR does not provide per-partition GUIDs as GPT
+    partition tables do.  This can be passed to the kernel with
+    "root=PARTUUID=$UUID" to identify a partition containing a root
+    filesystem.
 
     Args:
         partition: A partition object
@@ -700,9 +707,9 @@ def get_partition_mbr_uuid(partition, location):
     """
 
     pt_uuid = __get_blkid_output('PTUUID', location).upper()
-    return '%s-%02d' % (pt_uuid, partition.number)
+    return '%s-%02d' % (pt_uuid, part_num)
 
-def get_partition_gpt_guid(partition, location):
+def get_partition_gpt_guid(location, part_num):
     """
     Get a partition's GUID from a GPT partition table
 
@@ -715,9 +722,9 @@ def get_partition_gpt_guid(partition, location):
     using the kernel command line "root=PARTUUID=$UUID"
 
     Args:
-        partition: A partition object
-        location:  Location of the storage device containing the partition -
-                   an image or device node
+        part_num: The partition number
+        location: Location of the storage device containing the partition -
+                  an image path or device node
     Returns:
         A GUID string, e.g. 'B342D1AB-4B65-4601-97DC-D6DF3FE2E95E'
     """
@@ -726,13 +733,16 @@ def get_partition_gpt_guid(partition, location):
     # The partition GUID is located two sectors (protective MBR + GPT header)
     # plus 128 bytes for each partition entry in the table, plus 16 bytes for
     # the location of the partition's GUID
-    guid_offset = (2 * sector_size) + (128 * (partition.number - 1)) + 16
+    guid_offset = (2 * sector_size) + (128 * (part_num - 1)) + 16
 
     with open(location, 'rb') as f:
         f.seek(guid_offset)
         raw_uuid_bin = f.read(16)
 
-    a = str(raw_uuid_bin).upper()
+    a = ''
+    for c in raw_uuid_bin:
+        a += '%02X' % ord(c)
+
     return ('%s%s%s%s-%s%s-%s%s-%s-%s' %
             (a[6:8], a[4:6], a[2:4], a[0:2],
              a[10:12], a[8:10],
