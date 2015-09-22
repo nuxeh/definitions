@@ -475,7 +475,6 @@ class WriteExtension(Extension):
                 self.install_initramfs(initramfs, version_root)
                 self.generate_bootloader_config(mountpoint,
                                                 rootfs_uuid=rootfs_uuid)
-                # FIXME: needs bootloader install?
             else:
                 if device:
                     # A partitioned disk or image - boot with partition UUID
@@ -562,14 +561,14 @@ class WriteExtension(Extension):
 
         n = self.__cmd_files_in_dir(['mv'], source_dir, target_dir)
         if n:
-            self.status(msg='Copied %d files to %s' % (n, target_dir))
+            self.status(msg='Moved %d files to %s' % (n, target_dir))
 
     def copy_dir_contents(self, source_dir, target_dir):
         '''Copy all files source_dir, to target_dir'''
 
         n = self.__cmd_files_in_dir(['cp', '-a', '-r'], source_dir, target_dir)
         if n:
-            self.status(msg='Moved %d files to %s' % (n, target_dir))
+            self.status(msg='Copied %d files to %s' % (n, target_dir))
 
     def empty_dir(self, directory):
         '''Empty the contents of a directory, but not the directory itself'''
