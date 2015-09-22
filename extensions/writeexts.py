@@ -823,9 +823,14 @@ class WriteExtension(Extension):
         blob_name = 'usr/share/syslinux/' + blob
         self.status(msg='Installing syslinux %s blob' % pt_format.upper())
         blob_location = os.path.join(orig_root, blob_name)
-        subprocess.check_call(['dd', 'if=%s' % blob_location,
-                                     'of=%s' % device.location,
-                                     'bs=440', 'count=1', 'conv=notrunc'])
+        if os.path.exists(blob_location):
+            subprocess.check_call(['dd', 'if=%s' % blob_location,
+                                         'of=%s' % device.location,
+                                         'bs=440', 'count=1', 'conv=notrunc'])
+        else:
+            raise ExtensionError('MBR blob not found. Is this the correct
+                    architecture? The MBR blob will only be built for x86
+                    systems. You may wish to configure BOOTLOADER_INSTALL')
 
     def install_syslinux_menu(self, real_root, version_root):
         '''Make syslinux/extlinux menu binary available.
