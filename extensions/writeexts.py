@@ -584,8 +584,7 @@ class WriteExtension(Extension):
         for filename in files:
             filepath = os.path.join(source_dir, filename)
             add_params = [filepath, target_dir] if target_dir else [filepath]
-            #subprocess.check_call(cmd + add_params)
-            print cmd + add_params
+            subprocess.check_call(cmd + add_params)
         return len(files)
 
     def complete_fstab_for_btrfs_layout(self, system_dir,
