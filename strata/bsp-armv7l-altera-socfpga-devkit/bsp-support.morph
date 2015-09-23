@@ -2,6 +2,7 @@ name: bsp-support
 kind: chunk
 build-commands:
 # Modify auto-generated source files:
+- mv altera-socfpga/* .
 - for file in patches/*.diff; do patch -p 1 < "$file"; done
 - sed -i 's/^PRELOADER_SETTINGS_DIR := .*$/PRELOADER_SETTINGS_DIR := .\/hps_hps_0/' hardware-handoff/spl_bsp/Makefile
 - sed -i 's/^CROSS_COMPILE := .*$/CROSS_COMPILE := \/usr\/bin\//' hardware-handoff/spl_bsp/Makefile
