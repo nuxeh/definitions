@@ -27,9 +27,9 @@ chunks:
   - device-tree-compiler
 - name: bsp-support
   morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
-  repo: upstream:bsp-support
-  ref: af12b2ee43004fbebc45974afcec2c453f85e12d
-  unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
+  repo: https://github.com/nuxeh/bsp-support.git
+  ref: 8249a71c312271436c08bd4dfd6cda93c479531b
+  unpetrify-ref: review/edward_cragg/edcragg/baserock-on-altera-socfpga-devkit
   build-depends:
   - u-boot-tools@socfpga-devkit
 - name: preloader@socfpga-devkit
