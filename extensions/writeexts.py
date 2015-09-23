@@ -393,8 +393,8 @@ class WriteExtension(Extension):
             else:
                 raise
 
-    def get_uuid(self, location, offset=0, uuid_type=False):
-        '''Get the UUID of a block device's file system.
+    def get_uuid(self, location, offset=0):
+        '''Get the filesystem UUID of a block device's file system.
 
         Requires util-linux blkid; the busybox version ignores options and
         lies by exiting successfully.
@@ -403,20 +403,9 @@ class WriteExtension(Extension):
             location: Path of device or image to inspect
             offset: A byte offset - which should point to the start of a
                     partition containing a filesystem
-            disk: Boolean, if true, find the disk (partition table) UUID,
-                  rather than a filesystem UUID. Offset has no effect.
         '''
-        if uuid_type == 'pt':
-            # Whole disk UUID in partition table (MBR or GPT). Useful when
-            # booting a rootfs via kernel parameter 'root=PARTUUID-pn' where
-            # 'pn' is a zero-padded partition number - MBR only
-            field = 'PTUUID'
-        else:
-            # Filesystem UUID (with optional offset), as needed in fstab, or
-            # booting the kernel with an initramfs aware of filesystems
-            field = 'UUID'
 
-        return subprocess.check_output(['blkid', '-s', field, '-o',
+        return subprocess.check_output(['blkid', '-s', 'UUID', '-o',
                                         'value', '-p', '-O', str(offset),
                                         location]).strip()
 
