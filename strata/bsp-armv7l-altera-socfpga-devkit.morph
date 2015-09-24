@@ -28,8 +28,8 @@ chunks:
 - name: bsp-support
   morph: strata/bsp-armv7l-altera-socfpga-devkit/bsp-support.morph
   repo: upstream:bsp-support
-  ref: af12b2ee43004fbebc45974afcec2c453f85e12d
-  unpetrify-ref: edcragg/baserock-on-altera-socfpga-devkit
+  ref: 95e6be2188ad9dfd13cb8887cdc698519831871d
+  unpetrify-ref: master
   build-depends:
   - u-boot-tools@socfpga-devkit
 - name: preloader@socfpga-devkit
