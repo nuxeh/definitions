@@ -600,13 +600,13 @@ def get_partition_offsets(location):
 
     return __get_fdisk_list_numeric_column(location, 1)
 
-def get_partition_sizes(location):
+def get_partition_sector_sizes(location):
     """Return an array of sizes of partitions in a device or image in sectors"""
 
     return __get_fdisk_list_numeric_column(location, 3)
 
 def __get_fdisk_list_numeric_column(location, column):
-    return map(int, __filter_fdisk_list_output('%s(?:\d+\s+){%d}(\d+)' %
+    return map(int, __filter_fdisk_list_output('%s(?:\d+[\*\s]+){%d}(\d+)' %
                                                 (location, column), location))
 
 def __filter_fdisk_list_output(regex, location):

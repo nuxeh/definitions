@@ -973,7 +973,7 @@ class WriteExtension(Extension):
                 yield mountpoint
 
         sector_size = pyfdisk.get_sector_size(location)
-        partn_sizes = pyfdisk.get_partition_sizes(location)
+        partn_sizes = pyfdisk.get_partition_sector_sizes(location)
         for i, offset in enumerate(pyfdisk.get_partition_offsets(location)):
             try:
                 with self.mount_partition(location, offset * sector_size,
