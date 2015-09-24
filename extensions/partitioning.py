@@ -16,6 +16,7 @@
 
 """A module providing Baserock-specific partitioning functions"""
 
+import os
 import pyfdisk
 import writeexts
 
