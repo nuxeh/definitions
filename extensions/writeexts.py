@@ -941,7 +941,7 @@ class WriteExtension(Extension):
                     self.copy_dir_contents(src_dir, part_mount_dir)
 
         # Write raw files to disk with dd
-        partitioning.process_raw_files(dev)
+        partitioning.process_raw_files(dev, temp_root)
 
     @contextlib.contextmanager
     def mount_partition(self, location, offset_bytes, size_bytes):

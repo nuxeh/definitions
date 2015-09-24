@@ -85,15 +85,15 @@ def do_partitioning(location, disk_size, temp_root, part_spec):
 
     return dev
 
-def process_raw_files(dev):
+def process_raw_files(dev, temp_root):
     if hasattr(dev, 'raw_files'):
-        write_raw_files(location, temp_root, dev)
+        write_raw_files(dev.location, temp_root, dev)
     for part in dev.partitionlist:
         if hasattr(part, 'raw_files'):
             # dd seek is used, which skips n blocks before writing,
             # so we must skip n-1 sectors before writing in order to
             # start writing files to the first block of the partition
-            write_raw_files(location, temp_root, part,
+            write_raw_files(dev.location, temp_root, part,
                             (part.extent.start - 1) * dev.sector_size)
 
 def write_raw_files(location, temp_root, dev_or_part, start_offset=0):
