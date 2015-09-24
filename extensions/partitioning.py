@@ -18,6 +18,8 @@
 
 import os
 import pyfdisk
+import re
+import subprocess
 import writeexts
 
 def do_partitioning(location, disk_size, temp_root, part_spec):
