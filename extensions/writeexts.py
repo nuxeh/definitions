@@ -817,9 +817,9 @@ class WriteExtension(Extension):
                                          'of=%s' % device.location,
                                          'bs=440', 'count=1', 'conv=notrunc'])
         else:
-            raise ExtensionError('MBR blob not found. Is this the correct
-                    architecture? The MBR blob will only be built for x86
-                    systems. You may wish to configure BOOTLOADER_INSTALL')
+            raise ExtensionError('MBR blob not found. Is this the correct'
+                   'architecture? The MBR blob will only be built for x86'
+                   'systems. You may wish to configure BOOTLOADER_INSTALL')
 
     def install_syslinux_menu(self, real_root, version_root):
         '''Make syslinux/extlinux menu binary available.
