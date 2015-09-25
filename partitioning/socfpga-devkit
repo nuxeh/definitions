@@ -6,9 +6,6 @@ partitions:
   fdisk_type: 0xa2
   number: 3
   size: 1M
-  raw_files:
-  - file: boot/socfpga-preloader.img
-  - file: boot/u-boot.img
 - description: boot
   filesystem: vfat
   mountpoint: /boot
@@ -21,6 +18,3 @@ partitions:
   fdisk_type: 0x81
   number: 2
   size: fill
-raw_files:
-- file: boot/socfpga-devkit-env.img
-  offset_bytes: 512
