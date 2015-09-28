@@ -1,0 +1,36 @@
+name: bsp-armv7-odroid-c1
+kind: stratum
+description: |
+  Platform-specific chunks for Hardkernel Odroid C1
+
+  Support for this patform in the kernel is still being developed. Certain
+  features are still missing, e.g.
+
+  -
+  -
+  -
+  -
+
+  This system should be able to:
+  - Boot and run a text mode system
+
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: device-tree-compiler
+  morph: strata/bsp-armv7-odroid-c1/device-tree-compiler.morph
+  repo: upstream:device-tree-compiler
+  ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
+  unpetrify-ref: v1.4.1
+- name: u-boot@armv7-odroid-c1
+  morph: strata/bsp-jetson/u-boot@armv7-odroid-c1.morph
+  repo: upstream:u-boot
+  ref: 
+  unpetrify-ref: v2015.04
+  build-depends:
+  - device-tree-compiler
+- name: linux-armv7l-odroid-c1
+  morph: strata/bsp-jetson/linux-armv7-odroid-c1.morph
+  repo: upstream:linux
+  ref: 
+  unpetrify-ref: v4.2
