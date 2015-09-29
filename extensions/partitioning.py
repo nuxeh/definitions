@@ -141,6 +141,8 @@ class RawFile(object):
         elif 'offset_sectors' in kwargs:
             self.offset += kwargs['offset_sectors'] * sector_size
 
+        self.skip = kwargs.get('input_skip', 0)
+
         # Offset of the first free byte after this file
         self.next_offset = self.size + self.offset
 
@@ -149,5 +151,6 @@ class RawFile(object):
                                        (self.path, self.offset))
         subprocess.check_call(['dd', 'if=%s' % self.path,
                                      'of=%s' % location, 'bs=1',
-                                     'seek=%s' % self.offset, 'conv=notrunc'])
+                                     'seek=%s' % self.offset,
+                                     'skip=%s' % self.skip, 'conv=notrunc'])
         subprocess.check_call('sync')

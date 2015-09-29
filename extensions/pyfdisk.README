@@ -112,10 +112,8 @@ Quick start
     >>> dev = pyfdisk.Device('test.img', 'fill')
     >>> print dev
     <Device: location=test.img, size=16777216, partitions: 0>
-    >>> part = pyfdisk.Partition(size='1M', fdisk_type=0x81, filesystem='ext4',
-    >>> mountpoint='/test1')
-    >>> part2 = pyfdisk.Partition(size='fill', filesystem='btrfs',
-    >>> mountpoint='/test2')
+    >>> part = pyfdisk.Partition(size='1M', fdisk_type=0x81, filesystem='ext4', mountpoint='/test1')
+    >>> part2 = pyfdisk.Partition(size='fill', filesystem='btrfs', mountpoint='/test2')
     >>> dev.add_partition(part)
     >>> dev.add_partition(part2)
     >>> print dev.partitionlist
