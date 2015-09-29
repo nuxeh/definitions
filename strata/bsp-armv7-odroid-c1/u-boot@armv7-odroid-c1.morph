@@ -10,4 +10,3 @@ install-commands:
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 sd_fuse/u-boot.bin "$DESTDIR/boot/u-boot.bin"
 - install -m 755 sd_fuse/bl1.bin.hardkernel "$DESTDIR/boot/"
-- install -m 755 tools/* "$DESTDIR$PREFIX/bin/"
