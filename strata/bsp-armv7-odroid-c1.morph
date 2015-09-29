@@ -15,7 +15,7 @@ description: |
   - Boot and run a text mode system
 
 build-depends:
-- morph: strata/core.morph
+- morph: strata/coreutils-common.morph
 chunks:
 - name: device-tree-compiler
   morph: strata/bsp-armv7-odroid-c1/device-tree-compiler.morph
@@ -23,14 +23,14 @@ chunks:
   ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
   unpetrify-ref: v1.4.1
 - name: u-boot@armv7-odroid-c1
-  morph: strata/bsp-jetson/u-boot@armv7-odroid-c1.morph
-  repo: upstream:u-boot
-  ref: 
-  unpetrify-ref: v2015.04
+  morph: strata/bsp-armv7-odroid-c1/u-boot@armv7-odroid-c1.morph
+  repo: https://github.com/hardkernel/u-boot.git
+  ref: eb22ea4b25bae92589e7fd9929cc17643cda5f4b
+  unpetrify-ref: odroidc-v2011.03
   build-depends:
   - device-tree-compiler
 - name: linux-armv7l-odroid-c1
-  morph: strata/bsp-jetson/linux-armv7-odroid-c1.morph
-  repo: upstream:linux
-  ref: 
-  unpetrify-ref: v4.2
+  morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
+  repo: https://github.com/nuxeh/linux.git
+  ref: 2370f204e278014267b313fe2d5b3e596b34843a
+  unpetrify-ref: edcragg/odroid-c1

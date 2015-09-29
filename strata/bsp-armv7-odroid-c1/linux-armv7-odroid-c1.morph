@@ -2,13 +2,13 @@ name: linux-armv7-odroid-c1
 kind: chunk
 configure-commands:
 - make ARCH=arm multi_v7_defconfig
+
+btrfs, etc...
+
 - yes '' | make ARCH=arm oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm LOADADDR=0x00208000 uImage dtbs
 install-commands:
 - mkdir -p "$DESTDIR"/boot
 - cp arch/arm/boot/uImage "$DESTDIR"/boot/uImage
-- cp arch/arm/boot/dts/meson8b-odroidc1.dtb "$DESTDIR"/boot/.
-
-- make modules
-- make INSTALL_MOD_PATH="$DESTDIR" modules_install
+- cp arch/arm/boot/dts/meson8b-odroidc1.dtb "$DESTDIR"/boot/
