@@ -97,6 +97,7 @@ help: |
               ...
               raw_files:
               - file: boot/uboot.img
+                input_skip: 128
             raw_files:
             - file: boot/uboot-env.img
               offset_bytes: 512
@@ -107,6 +108,7 @@ help: |
         * With 'raw_files' specified inside a partition, 'offset' or
           'offset_bytes' is counted from the start of that partition,
           otherwise from the start of the device.
+        * Specifying 'input_skip' will set the 'skip=' option for dd
         * Providing an offset is optional for all files
 
     * USE_PARTITIONING=boolean (default: yes) Use this flag to override
