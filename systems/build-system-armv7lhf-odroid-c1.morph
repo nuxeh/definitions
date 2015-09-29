@@ -14,8 +14,8 @@ strata:
   morph: strata/python-core.morph
 - name: python3-core
   morph: strata/python3-core.morph
-- name: bsp-jetson
-  morph: strata/bsp-jetson.morph
+- name: bsp-armv7-odroid-c1
+  morph: strata/bsp-armv7-odroid-c1.morph
 - name: tools
   morph: strata/tools.morph
 - name: python-cliapp
