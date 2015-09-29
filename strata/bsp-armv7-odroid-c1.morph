@@ -29,6 +29,11 @@ chunks:
   unpetrify-ref: odroidc-v2011.03
   build-depends:
   - device-tree-compiler
+- name: u-boot-tools@armv7-odroid-c1
+  morph: strata/bsp-armv7l-altera-socfpga-devkit/u-boot-tools@armv7-odroid-c1.morph
+  repo: upstream:u-boot
+  ref: 52635e0399ae7b9ca07e0b086e41e28d63847ca9
+  unpetrify-ref: v2015.10-rc4
 - name: linux-armv7l-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
   repo: https://github.com/nuxeh/linux.git

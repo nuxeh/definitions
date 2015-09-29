@@ -2,9 +2,27 @@ name: linux-armv7-odroid-c1
 kind: chunk
 configure-commands:
 - make ARCH=arm multi_v7_defconfig
-
-btrfs, etc...
-
+- scripts/config -e BTRFS_FS
+- scripts/config -e BTRFS_FS_POSIX_ACL
+- scripts/config -d BTRFS_FS_CHECK_INTEGRITY
+- scripts/config -e DEVTMPFS
+- scripts/config -e DEVTMPFS_MOUNT
+- scripts/config -e FUSE_FS
+- scripts/config -e OVERLAY_FS
+- scripts/config -e CONFIG_FHANDLE
+- scripts/config -e CGROUPS
+- scripts/config -e AUTOFS4_FS
+- scripts/config -e BLK_DEV_LOOP
+- scripts/config --set-str UEVENT_HELPER_PATH ''
+- scripts/config -e DM_SNAPSHOT
+- scripts/config -e IKCONFIG
+- scripts/config -e IKCONFIG_PROC
+- scripts/config -e SECCOMP
+#- scripts/config -d DEBUG_STACK_TRACE
+- scripts/config -e FB_VESA
+- scripts/config -e VLAN_8021Q
+- scripts/config -e BRIDGE_VLAN_FILTERING
+- scripts/config -e IPV6
 - yes '' | make ARCH=arm oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm LOADADDR=0x00208000 uImage dtbs
