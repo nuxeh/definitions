@@ -289,11 +289,18 @@ class Partition(object):
     def __init__(self, size=0, fdisk_type=0x81, filesystem='none', **kwargs):
         if not size and 'size' not in kwargs:
             raise PartitioningError('Partition must have a non-zero size')
+
         self.filesystem = filesystem
         self.fdisk_type = fdisk_type
-        if self.fdisk_type == 'none' and self.filesystem != 'none':
-            raise PartitioningError('Partition: Free space'
-                                    'cannot have a filesystem')
+
+        if self.fdisk_type == 'none':
+            if self.filesystem != 'none':
+                raise PartitioningError('Partition: Free space '
+                                        'cannot have a filesystem')
+            if self.mountpoint != 'none':
+                raise PartitioningError('Partition: Free space '
+                                        'cannot have a mountpoint')
+
         self.size = human_size(size)
         self.__dict__.update(**kwargs)
 
