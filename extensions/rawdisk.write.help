@@ -97,19 +97,28 @@ help: |
               ...
               raw_files:
               - file: boot/uboot.img
-                input_skip: 128
             raw_files:
             - file: boot/uboot-env.img
               offset_bytes: 512
+            - file: boot/preloader.bin
+              skip_bytes: 128
+              count_bytes: 16K
 
         * Files are written consecutively in the order they are listed, and
           sourced from the unpacked root filesystem image
-        * Files can be given a specific offset with 'offset' or 'offset_bytes'
-        * With 'raw_files' specified inside a partition, 'offset' or
+        * Files can be given a specific offset with 'offset_sectors' or
+          'offset_bytes'
+        * With 'raw_files' specified inside a partition, 'offset_sectors' or
           'offset_bytes' is counted from the start of that partition,
           otherwise from the start of the device.
-        * Specifying 'input_skip' will set the 'skip=' option for dd
+        * For files without an explicit offset, the next file is written
+          starting with the next free byte following the previous file
         * Providing an offset is optional for all files
+        * Specifying 'skip_bytes' will set the 'skip=' option for dd, skipping
+          a number of bytes at the start of the input file
+        * Specifying 'count_bytes' sets the 'count=' option for dd
+        * For properties which take an input in bytes, a human-readable
+          multiplier can be used, e.g. K, M, G (integer multiplicands only)
 
     * USE_PARTITIONING=boolean (default: yes) Use this flag to override
       partitioning, to produce disk images or devices which only contain a

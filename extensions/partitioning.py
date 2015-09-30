@@ -139,13 +139,14 @@ class RawFile(object):
 
         self.offset = start_offset
         if 'offset_bytes' in kwargs:
-            self.offset += kwargs['offset_bytes']
+            self.offset += pyfdisk.human_size(kwargs['offset_bytes'])
         elif 'offset_sectors' in kwargs:
             self.offset += kwargs['offset_sectors'] * sector_size
         else:
             self.offset += wr_offset
 
-        self.skip = kwargs.get('input_skip', 0)
+        self.skip = pyfdisk.human_size(kwargs.get('skip_bytes', 0))
+        self.count = pyfdisk.human_size(kwargs.get('count_bytes', self.size))
 
         # Offset of the first free byte after this file (first byte of next)
         self.next_offset = self.size + self.offset
@@ -155,6 +156,8 @@ class RawFile(object):
                                        (self.path, self.offset))
         subprocess.check_call(['dd', 'if=%s' % self.path,
                                      'of=%s' % location, 'bs=1',
-                                     'seek=%s' % self.offset,
-                                     'skip=%s' % self.skip, 'conv=notrunc'])
+                                     'seek=%d' % self.offset,
+                                     'skip=%d' % self.skip,
+                                     'count=%d' % self.count,
+                                     'conv=notrunc'])
         subprocess.check_call('sync')
