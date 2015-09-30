@@ -272,7 +272,7 @@ class Partition(object):
               be expanded to fill all unused space. Where there is more than
               one fill partition, unused space is divided equally between the
               fill partitions.
-        fdisk_type: A number describing the hexadecimal code used by fdisk
+        fdisk_type: An integer representing hexadecimal code used by fdisk
                     to describe the partition type. Any partitions with
                     fdisk_type='none' create an area of unused space.
 
@@ -308,7 +308,10 @@ class Partition(object):
                         '    size:       %s\n'
                         '    fdisk type: %s\n'
                         '    filesystem: %s'
-                   % (self.size, hex(self.fdisk_type), self.filesystem))
+                   % (self.size,
+                      hex(self.fdisk_type) if self.fdisk_type != 'none'
+                      else 'none',
+                      self.filesystem))
         if hasattr(self, 'extent'):
             string += (
                       '\n    start:      %s'
