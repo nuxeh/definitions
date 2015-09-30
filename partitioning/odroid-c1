@@ -9,7 +9,7 @@ partitions:
 - description: root
   filesystem: btrfs
   mountpoint: /
-  fdisk_type: 0x81
+  fdisk_type: 0x83
   size: fill
 raw_files:
 - file: boot/bl1.bin.hardkernel
