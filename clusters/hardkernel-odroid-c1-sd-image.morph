@@ -11,3 +11,4 @@ systems:
       location: build-system-armv7lhf-hardkernel-odroid-c1-sd.img
       DISK_SIZE: 7G
       PARTITION_FILE: partitioning/odroid-c1
+      HOSTNAME: baserock-odroid

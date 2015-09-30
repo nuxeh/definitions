@@ -13,9 +13,6 @@ partitions:
   size: fill
 raw_files:
 - file: boot/bl1.bin.hardkernel
-- file: boot/bl1.bin.hardkernel
-  offset_bytes: 512
-  input_skip: 512
 - file: boot/u-boot.bin
   offset_sectors: 64
 
