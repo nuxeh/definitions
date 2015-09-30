@@ -14,6 +14,9 @@ partitions:
 raw_files:
 - file: boot/bl1.bin.hardkernel
   count_bytes: 442
+- file: boot/bl1.bin.hardkernel
+  offset_bytes: 512
+  skip_bytes: 512
 - file: boot/u-boot.bin
   offset_sectors: 64
 
