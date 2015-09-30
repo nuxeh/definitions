@@ -4,7 +4,7 @@ partitions:
 - description: boot
   filesystem: vfat
   mountpoint: /boot
-  fdisk_type: 0x0c
+  fdisk_type: 0x06
   size: 128M
 - description: root
   filesystem: btrfs
@@ -18,6 +18,4 @@ raw_files:
   offset_bytes: 512
   skip_bytes: 512
 - file: boot/u-boot.bin
-  offset_sectors: 64
-
-# create image in build?
+  offset_bytes: 32K
