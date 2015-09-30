@@ -293,16 +293,16 @@ class Partition(object):
         self.filesystem = filesystem
         self.fdisk_type = fdisk_type
 
+        self.size = human_size(size)
+        self.__dict__.update(**kwargs)
+
         if self.fdisk_type == 'none':
             if self.filesystem != 'none':
                 raise PartitioningError('Partition: Free space '
                                         'cannot have a filesystem')
-            if self.mountpoint != 'none':
+            if hasattr(self, 'mountpoint') and self.mountpoint != 'none':
                 raise PartitioningError('Partition: Free space '
                                         'cannot have a mountpoint')
-
-        self.size = human_size(size)
-        self.__dict__.update(**kwargs)
 
     def compare(self, other):
         """Check for mutually exclusive attributes"""
