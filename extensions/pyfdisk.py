@@ -138,6 +138,7 @@ class PartitionList(object):
 
     def append(self, partition):
         """Append a new Partition object to the list"""
+        partition.check()
         if isinstance(partition, Partition):
             for part in self.__partition_list:
                 dup_attrib = part.compare(partition)
@@ -296,6 +297,8 @@ class Partition(object):
         self.size = human_size(size)
         self.__dict__.update(**kwargs)
 
+    def check(self):
+        """Check for correctness"""
         if self.fdisk_type == 'none':
             if self.filesystem != 'none':
                 raise PartitioningError('Partition: Free space '
