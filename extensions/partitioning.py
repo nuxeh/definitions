@@ -101,9 +101,9 @@ def process_raw_files(dev, temp_root):
 
 def write_raw_files(location, temp_root, dev_or_part, start_offset=0):
     '''Write files with `dd`'''
-    offset = start_offset
+    offset = 0
     for raw_args in dev_or_part.raw_files:
-        r = RawFile(temp_root, offset, **raw_args)
+        r = RawFile(temp_root, start_offset, offset, **raw_args)
         offset = r.next_offset
         r.dd(location)
 
@@ -111,7 +111,9 @@ def write_raw_files(location, temp_root, dev_or_part, start_offset=0):
 class RawFile(object):
     '''A class to hold information about a raw file to write to a device'''
 
-    def __init__(self, source_root, wr_offset=0, sector_size=512, **kwargs):
+    def __init__(self, source_root,
+                 start_offset=0, wr_offset=0,
+                 sector_size=512, **kwargs):
         '''Initialisation function
 
         Args:
@@ -135,15 +137,17 @@ class RawFile(object):
         else:
             self.size = os.stat(self.path).st_size
 
-        self.offset = wr_offset
+        self.offset = start_offset
         if 'offset_bytes' in kwargs:
             self.offset += kwargs['offset_bytes']
         elif 'offset_sectors' in kwargs:
             self.offset += kwargs['offset_sectors'] * sector_size
+        else:
+            self.offset += wr_offset
 
         self.skip = kwargs.get('input_skip', 0)
 
-        # Offset of the first free byte after this file
+        # Offset of the first free byte after this file (first byte of next)
         self.next_offset = self.size + self.offset
 
     def dd(self, location):
