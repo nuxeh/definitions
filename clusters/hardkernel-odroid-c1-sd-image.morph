@@ -4,10 +4,10 @@ description: |
   This cluster morph deploys a little endian Baserock system to
   an SD image for the Altera Cyclone V development kit
 systems:
-- morph: systems/build-system-armv7l-odroid-c1.morph
+- morph: systems/build-system-armv7lhf-odroid-c1.morph
   deploy:
     self:
       type: extensions/rawdisk
-      location: build-system-armv7l-hardkernel-odroid-c1-sd.img
+      location: build-system-armv7lhf-hardkernel-odroid-c1-sd.img
       DISK_SIZE: 7G
       PARTITION_FILE: partitioning/odroid-c1
