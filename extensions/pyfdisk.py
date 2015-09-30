@@ -501,7 +501,7 @@ class Device(object):
                     # number when setting the type of the
                     # first created partition
                     cmd += str(partition.number) + "\n"
-                cmd += str(partition.fdisk_type) + "\n"
+                cmd += str(hex(partition.fdisk_type)) + "\n"
 
                 # Set bootable flag
                 if hasattr(partition, 'boot') and pt_format == 'mbr':
