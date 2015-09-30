@@ -2,8 +2,10 @@ name: u-boot-tools@armv7-odroid-c1
 kind: chunk
 configure-commands:
 - git status
+- make ARCH=arm CROSS_COMPILE=/usr/bin/ defconfig
+- make ARCH=arm CROSS_COMPILE=/usr/bin/ silentoldconfig
 build-commands:
-- make ARCH=arm CROSS_COMPILE=/usr/bin/ tools
+- make ARCH=arm CROSS_COMPILE=/usr/bin/ tools-only
 install-commands:
 - mkdir -p "$DESTDIR$PREFIX/bin"
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
