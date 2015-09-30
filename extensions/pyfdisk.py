@@ -291,6 +291,9 @@ class Partition(object):
             raise PartitioningError('Partition must have a non-zero size')
         self.filesystem = filesystem
         self.fdisk_type = fdisk_type
+        if self.fdisk_type == 'none' and self.filesystem != 'none':
+            raise PartitioningError('Partition: Free space'
+                                    'cannot have a filesystem')
         self.size = human_size(size)
         self.__dict__.update(**kwargs)
 
