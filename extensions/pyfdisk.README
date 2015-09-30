@@ -28,7 +28,7 @@ The format of this file is as follows:
       number: 3
       size: 10G
       filesystem: btrfs
-      fdisk_type: 0x81
+      fdisk_type: 0x83
       mountpoint: /
     - description: src
       size: fill
