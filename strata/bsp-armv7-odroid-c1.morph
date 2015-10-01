@@ -22,7 +22,7 @@ chunks:
   unpetrify-ref: v1.4.1
 - name: u-boot@armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/u-boot@armv7-odroid-c1.morph
-  repo: https://github.com/hardkernel/u-boot.git
+  repo: upstream: u-boot-odroid-c1
   ref: eb22ea4b25bae92589e7fd9929cc17643cda5f4b
   unpetrify-ref: odroidc-v2011.03
   build-depends:
@@ -34,7 +34,7 @@ chunks:
   unpetrify-ref: v2015.10-rc4
 - name: linux-armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
-  repo: ssh://ed@pomo.dyn.ducie.codethink.co.uk:/home/ed/Projects/ge001/linux/.git
+  repo: upstream: linux
   ref: 1a1899822295c0cc6ad8c334b360c2fb85fcd2fe
   unpetrify-ref: edcragg/temp/odroid-c1
   build-depends:
