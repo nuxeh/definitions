@@ -23,6 +23,7 @@ configure-commands:
 - scripts/config -e VLAN_8021Q
 - scripts/config -e BRIDGE_VLAN_FILTERING
 - scripts/config -e IPV6
+- scripts/config -e MMC_MESON
 - yes '' | make ARCH=arm oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm LOADADDR=0x00208000 uImage dtbs
