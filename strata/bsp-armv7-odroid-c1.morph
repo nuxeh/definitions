@@ -3,15 +3,13 @@ kind: stratum
 description: |
   Platform-specific chunks for Hardkernel Odroid C1
 
-  Support for this patform in the kernel is still being developed. Certain
+  Support for this patform in the kernel is still being developed. Most
   features are still missing, e.g.
 
-  -
-  -
-  -
-  -
+  - USB
+  - Ethernet
 
-  This system should be able to:
+  The system is currently able to:
   - Boot and run a text mode system
 
 build-depends:
