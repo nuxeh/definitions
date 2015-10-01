@@ -1,6 +1,7 @@
 name: linux-armv7-odroid-c1
 kind: chunk
 configure-commands:
+- git status
 - make ARCH=arm multi_v7_defconfig
 - scripts/config -e BTRFS_FS
 - scripts/config -e BTRFS_FS_POSIX_ACL
