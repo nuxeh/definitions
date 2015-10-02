@@ -1,0 +1,7 @@
+name: bsp-support
+kind: chunk
+build-commands:
+- mkenvimage -s 4096 -o uboot-env-odroid-c1.img odroid-c1/uboot-env.txt
+install-commands:
+- mkdir -p "$DESTDIR/boot"
+- install -m 755 uboot-env-odroid-c1.img "$DESTDIR/boot"

@@ -19,3 +19,5 @@ raw_files:
   skip_bytes: 512
 - file: boot/u-boot.bin
   offset_bytes: 32K
+- file: boot/uboot-env-odroid-c1.img
+  offset_bytes: 512
