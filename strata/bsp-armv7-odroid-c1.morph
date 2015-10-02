@@ -32,13 +32,6 @@ chunks:
   repo: upstream:u-boot
   ref: 52635e0399ae7b9ca07e0b086e41e28d63847ca9
   unpetrify-ref: v2015.10-rc4
-- name: bsp-support
-  morph: strata/bsp-armv7-odroid-c1/bsp-support.morph
-  repo: https://github.com/nuxeh/bsp-support.git
-  ref: bd7541149185062a4eef8f6562e2d814575d0762
-  unpetrify-ref: edcragg/odroid-c1
-  build-depends:
-  - u-boot-tools@armv7-odroid-c1
 - name: linux-armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
   repo: ssh://ed@pomo.dyn.ducie.codethink.co.uk:/home/ed/Projects/ge001/linux/.git

@@ -5,8 +5,18 @@ configure-commands:
 build-commands:
 - make ARCH=arm CROSS_COMPILE=/usr/bin/
 - make ARCH=arm CROSS_COMPILE=/usr/bin/ tools
+- |
+  cat > boot.ini << EOF
+  ODROIDC-UBOOT-CONFIG
+
+  fatload mmc 0:1 0x21000000 uImage
+  fatload mmc 0:1 0x21800000 meson8b-odroidc1.dtb
+  setenv bootargs "rw console=ttyAML0,115200 rootfstype=btrfs rootflags=subvol=systems/default/run root=/dev/mmcblk0p2 init=/sbin/init rootwait"
+  bootm 0x21000000 - 0x21800000u
+  EOF
 install-commands:
 - mkdir -p "$DESTDIR$PREFIX/bin"
 - mkdir -p "$DESTDIR/boot"
 - install -m 755 sd_fuse/u-boot.bin "$DESTDIR/boot/u-boot.bin"
 - install -m 755 sd_fuse/bl1.bin.hardkernel "$DESTDIR/boot/"
+- install -m 755 boot.ini "$DESTDIR/boot"

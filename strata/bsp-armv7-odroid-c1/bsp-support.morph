@@ -1,6 +1,0 @@
-name: bsp-support
-kind: chunk
-build-commands:
-install-commands:
-- mkdir -p "$DESTDIR/boot"
-- install -m 755 odroid-c1/boot.ini "$DESTDIR/boot"
