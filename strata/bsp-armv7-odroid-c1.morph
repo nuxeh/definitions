@@ -35,7 +35,7 @@ chunks:
 - name: bsp-support
   morph: strata/bsp-armv7-odroid-c1/bsp-support.morph
   repo: https://github.com/nuxeh/bsp-support.git
-  ref: 4a39cff6eddfb218f5e8ef983226d19abd716d5d
+  ref: bd7541149185062a4eef8f6562e2d814575d0762
   unpetrify-ref: edcragg/odroid-c1
   build-depends:
   - u-boot-tools@armv7-odroid-c1
