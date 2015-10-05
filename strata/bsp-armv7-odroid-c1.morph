@@ -1,0 +1,41 @@
+name: bsp-armv7-odroid-c1
+kind: stratum
+description: |
+  Platform-specific chunks for Hardkernel Odroid C1
+
+  Support for this patform in the kernel is still being developed. Most
+  features are still missing, e.g.
+
+  - USB
+  - Ethernet
+
+  The system is currently able to:
+  - Boot and run a text mode system
+
+build-depends:
+- morph: strata/coreutils-common.morph
+chunks:
+- name: device-tree-compiler
+  morph: strata/bsp-armv7-odroid-c1/device-tree-compiler.morph
+  repo: upstream:device-tree-compiler
+  ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
+  unpetrify-ref: v1.4.1
+- name: u-boot@armv7-odroid-c1
+  morph: strata/bsp-armv7-odroid-c1/u-boot@armv7-odroid-c1.morph
+  repo: https://github.com/hardkernel/u-boot.git
+  ref: eb22ea4b25bae92589e7fd9929cc17643cda5f4b
+  unpetrify-ref: odroidc-v2011.03
+  build-depends:
+  - device-tree-compiler
+- name: u-boot-tools@armv7-odroid-c1
+  morph: strata/bsp-armv7-odroid-c1/u-boot-tools@armv7-odroid-c1.morph
+  repo: upstream:u-boot
+  ref: 52635e0399ae7b9ca07e0b086e41e28d63847ca9
+  unpetrify-ref: v2015.10-rc4
+- name: linux-armv7-odroid-c1
+  morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
+  repo: ssh://ed@pomo.dyn.ducie.codethink.co.uk:/home/ed/Projects/ge001/linux/.git
+  ref: 1f9900004fb3e0fafbc19662f3afc7a5a5858e06
+  unpetrify-ref: edcragg/temp/odroid-c1
+  build-depends:
+  - u-boot-tools@armv7-odroid-c1
