@@ -1,0 +1,21 @@
+start_offset: 2048
+partition_table_format: mbr
+partitions:
+- description: boot
+  filesystem: vfat
+  mountpoint: /boot
+  fdisk_type: 0x06
+  size: 128M
+- description: root
+  filesystem: btrfs
+  mountpoint: /
+  fdisk_type: 0x83
+  size: fill
+raw_files:
+- file: boot/bl1.bin.hardkernel
+  count_bytes: 442
+- file: boot/bl1.bin.hardkernel
+  offset_bytes: 512
+  skip_bytes: 512
+- file: boot/u-boot.bin
+  offset_bytes: 32K
