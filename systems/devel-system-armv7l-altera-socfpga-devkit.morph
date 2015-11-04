@@ -36,7 +36,7 @@ strata:
 - name: nfs
   morph: strata/nfs.morph
 - name: python-core
-  morph: strata/python-core.morph
+  morph: strata/python2-core.morph
 - name: python-tools
   morph: strata/python-tools.morph
 - name: python-common
