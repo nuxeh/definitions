@@ -10,10 +10,8 @@ strata:
   morph: strata/core.morph
 - name: foundation
   morph: strata/foundation.morph
-- name: python-core
+- name: python2-core
   morph: strata/python2-core.morph
-- name: python3-core
-  morph: strata/python3-core.morph
 - name: bsp-armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1.morph
 - name: tools
