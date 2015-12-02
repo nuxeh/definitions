@@ -29,7 +29,8 @@ chunks:
 - name: linux-armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
   repo: https://github.com/nuxeh/linux.git
-  ref: baserock/edcragg/odroid-c1-wip-serial-test
+  ref: edcragg/ir-receiver
+#  ref: baserock/edcragg/odroid-c1-wip-serial-test
 #  unpetrify-ref: edcragg/temp/odroid-c1
   build-depends:
   - u-boot-tools@armv7-odroid-c1
