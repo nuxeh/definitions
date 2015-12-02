@@ -24,6 +24,19 @@ configure-commands:
 - scripts/config -e VLAN_8021Q
 - scripts/config -e BRIDGE_VLAN_FILTERING
 - scripts/config -e IPV6
+# TRACING
+- scripts/config -e CONFIG_TRACING_SUPPORT
+- scripts/config -e CONFIG_FTRACE
+- scripts/config -e CONFIG_FUNCTION_TRACER
+- scripts/config -e CONFIG_FUNCTION_GRAPH_TRACER
+- scripts/config -e CONFIG_STACK_TRACER
+- scripts/config -e CONFIG_DYNAMIC_FTRACE
+# IR
+- scripts/config -e IR_MESON
+- scripts/config -e MEDIA_SUPPORT
+- scripts/config -e RC_CORE
+- scripts/config -e MEDIA_RC_SUPPORT
+- scripts/config -e RC_DEVICES
 - scripts/config -e MMC_MESON
 - yes '' | make ARCH=arm oldconfig
 build-commands:
@@ -32,3 +45,19 @@ install-commands:
 - mkdir -p "$DESTDIR"/boot
 - cp arch/arm/boot/uImage "$DESTDIR"/boot/uImage
 - cp arch/arm/boot/dts/meson8b-odroidc1.dtb "$DESTDIR"/boot/
+- make modules
+- make INSTALL_MOD_PATH="$DESTDIR" modules_install
+- install -d "$DESTDIR$PREFIX/src/linux"
+- |
+  (
+      printf 'Makefile\0'
+      printf 'Module.symvers\0'
+      find arch/arm -maxdepth 1 -name 'Makefile*' -print0
+      find arch/arm \( -name 'module.lds' -o -name 'Kbuild.platforms' -o -name 'Platform' \) -print0
+      find arch/arm \( -type d -a \( -name include -o -name scripts \) \) -o \
+                               \! -type d -a \( -path '*include/*' -o -path '*scripts/*' \) -print0
+      find include -name 'asm*' -prune -o -print0
+      find include/asm-generic -print0
+      find include/uapi -print0
+      find scripts -print0
+  ) | cpio -0pumd "$DESTDIR$PREFIX/src/linux"
