@@ -28,8 +28,8 @@ chunks:
   unpetrify-ref: v2015.10-rc4
 - name: linux-armv7-odroid-c1
   morph: strata/bsp-armv7-odroid-c1/linux-armv7-odroid-c1.morph
-  repo: ssh://ed@pomo.dyn.ducie.codethink.co.uk:/home/ed/Projects/ge001/linux/.git
-  ref: 1f9900004fb3e0fafbc19662f3afc7a5a5858e06
-  unpetrify-ref: edcragg/temp/odroid-c1
+  repo: https://github.com/nuxeh/linux.git
+  ref: baserock/edcragg/odroid-c1-wip-serial-test
+#  unpetrify-ref: edcragg/temp/odroid-c1
   build-depends:
   - u-boot-tools@armv7-odroid-c1
