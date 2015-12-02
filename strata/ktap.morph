@@ -1,0 +1,19 @@
+name: ktap
+kind: stratum
+description: A dynamic kernel tracer
+build-depends:
+- morph: strata/build-essential.morph
+- morph: strata/bsp-armv7-odroid-c1.morph
+chunks:
+- name: libelf
+  morph: strata/ktap/libelf.morph
+  repo: https://github.com/WolfgangSt/libelf.git
+  ref: dbbf0eddb1f7d243f5f909cba13597ad76fc4fcb
+  unpetrify-ref: master
+- name: ktap
+  morph: strata/ktap/ktap.morph
+  repo: https://github.com/ktap/ktap.git
+  ref: 8c1f16359a8c3b7ec645e93bfea2e767036d2ab6
+  unpetrify-ref: master
+  build-depends:
+  - libelf

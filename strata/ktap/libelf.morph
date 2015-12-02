@@ -1,0 +1,8 @@
+name: libelf
+kind: chunk
+build-system: autotools
+configure-commands:
+- ./configure --prefix=/usr
+build-commands:
+- make
+- make install
