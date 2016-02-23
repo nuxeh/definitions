@@ -1,8 +1,7 @@
 name: ktap
 kind: chunk
-build-system: autotools
-configure-commands:
-- ./configure --prefix=/usr
+build-system: manual
 build-commands:
-- make
-- make install
+- make KERNEL_SRC="$PREFIX"/src/linux
+install-commands:
+- make KERNEL_SRC="$PREFIX"/src/linux install

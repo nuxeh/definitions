@@ -2,7 +2,9 @@ name: libelf
 kind: chunk
 build-system: autotools
 configure-commands:
-- ./configure --prefix=/usr
+- autoreconf -i
+- ./configure --enable-maintainer-mode
 build-commands:
-- make
-- make install
+- cd libelf && make
+install-commands:
+- cd libelf && make install

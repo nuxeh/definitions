@@ -34,10 +34,8 @@ strata:
   morph: strata/devtools.morph
 - name: libsoup-common
   morph: strata/libsoup-common.morph
-- name: glib-common
-  morph: strata/glib-common.morph
-- name: ostree-core
-  morph: strata/ostree-core.morph
+- name: ktap
+  morph: strata/ktap.morph
 configuration-extensions:
 - extensions/set-hostname
 - extensions/add-config-files

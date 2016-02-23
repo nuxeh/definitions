@@ -7,13 +7,13 @@ build-depends:
 chunks:
 - name: libelf
   morph: strata/ktap/libelf.morph
-  repo: https://github.com/WolfgangSt/libelf.git
-  ref: dbbf0eddb1f7d243f5f909cba13597ad76fc4fcb
+  repo: git://git.fedorahosted.org/git/elfutils.git
+  ref: e2cf85cd35d33f92ff3d032e941783238a8fdaa1
   unpetrify-ref: master
 - name: ktap
   morph: strata/ktap/ktap.morph
-  repo: https://github.com/ktap/ktap.git
-  ref: 8c1f16359a8c3b7ec645e93bfea2e767036d2ab6
+  repo: https://github.com/nuxeh/ktap.git
+  ref: 77af3ae17424d971532116799879460016bceb74
   unpetrify-ref: master
   build-depends:
   - libelf
