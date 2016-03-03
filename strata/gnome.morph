@@ -14,7 +14,7 @@ build-depends:
 - morph: strata/NetworkManager-common.morph
 - morph: strata/multimedia-gstreamer.morph
 - morph: strata/network-security.morph
-- morph: strata/privileges-management.morph
+#- morph: strata/privileges-management.morph
 - morph: strata/python3-gobject.morph
 - morph: strata/wayland-generic.morph
 - morph: strata/ruby.morph

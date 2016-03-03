@@ -1,6 +1,8 @@
 name: mozjs17
 kind: chunk
 build-system: manual
+pre-configure-commands:
+#- cp /usr/share/automake*/config.guess . 
 configure-commands:
 - |
   cd js/src;

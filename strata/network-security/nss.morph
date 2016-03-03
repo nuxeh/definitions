@@ -5,7 +5,7 @@ build-system: manual
 build-commands:
 - |
   case "$MORPH_ARCH" in
-      x86_64|ppc64)
+      x86_64|ppc64|armv8l64)
           export USE_64=1;;
       *)
           ;;

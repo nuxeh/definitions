@@ -6,6 +6,7 @@ build-depends:
 - morph: strata/foundation.morph
 chunks:
 - name: libatomic_ops
+  morph: strata/audio-bluetooth/libatomic_ops.morph
   repo: upstream:libatomic_ops
   ref: 0a58f5d63969c10d2141af89cb7a53df786909ab
   unpetrify-ref: baserock/morph
