@@ -1,0 +1,5 @@
+name: libatomic_ops
+kind: chunk
+build-system: autotools
+pre-configure-commands:
+- cp /usr/share/automake*/config.guess .
