@@ -14,7 +14,6 @@ build-depends:
 - morph: strata/core.morph
 chunks:
 - name: device-tree-compiler@jetson-tx1
-  build-system: manual
   morph: strata/bsp-jetson/device-tree-compiler@jetson-tx1.morph
   repo: upstream:device-tree-compiler
   ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
