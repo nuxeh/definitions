@@ -1,5 +1,6 @@
 name: device-tree-compiler@jetson-tx1
 kind: chunk
+build-system: manual
 build-commands:
 - make all
 install-commands:
