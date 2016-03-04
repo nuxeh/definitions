@@ -1,0 +1,38 @@
+name: bsp-jetson-tx1
+kind: stratum
+description: |
+  Platform-specific chunks for NVIDIA Jetson TX1
+
+  Support for the Tegra platform is still being developed. A very recent
+  kernel with some patches is currently required to get a fully
+  accelerated graphics stack on this platform. Note that the SATA and
+  networking will not work unless you have flashed the bootloader on
+  your board to the version of U-Boot built in this stratum. Also, the
+  CPUs on the Jetson run at a slow speed with this version of Linux.
+  - TODO Note on memory timing / SMP
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: device-tree-compiler@jetson-tx1
+  morph: strata/bsp-jetson/device-tree-compiler@jetson-tx1.morph
+  repo: upstream:device-tree-compiler
+  ref: 302fca9f4c283e1994cf0a5a9ce1cf43ca15e6d2
+  unpetrify-ref: v1.4.1
+- name: u-boot@jetson-tx1
+  morph: strata/bsp-jetson/u-boot@jetson-tx1.morph
+  repo: upstream:u-boot
+  ref: 5ec0003b19cbdf06ccd6941237cbc0d1c3468e2d
+  unpetrify-ref: v2016.03-rc3
+# TODO: move to an actual release if it works
+  build-depends:
+  - device-tree-compiler@jetson-tx1
+- name: linux-jetson-tk1
+  morph: strata/bsp-jetson/linux-jetson-tx1.morph
+  repo: upstream:linux
+  ref: fc77dbd34c5c99bce46d40a2491937c3bcbd10af
+  unpetrify-ref: v4.5-rc6
+- name: linux-firmware@jetson-tx1
+  morph: strata/bsp-jetson/linux-firmware@jetson-tx1.morph
+  repo: upstream:linux-firmware
+  ref: 8d1fd61a3723ab8cb6b7bfeb8be38e16282cc1ed
+  unpetrify-ref: master
