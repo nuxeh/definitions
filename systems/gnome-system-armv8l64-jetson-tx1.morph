@@ -9,6 +9,8 @@ description: |
 
 arch: armv8l64
 strata:
+- name: audio-bluetooth
+  morph: strata/audio-bluetooth.morph
 #- name: bsp-jetson
 #  morph: strata/bsp-jetson.morph
 - name: build-essential
