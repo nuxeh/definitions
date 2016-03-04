@@ -1,0 +1,21 @@
+name: linux-firmware@jetson-tx1
+kind: chunk
+install-commands:
+- install -d "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/acr/bl.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/acr/ucode_load.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/fecs_bl.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/fecs_data.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/fecs_inst.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/fecs_sig.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/gpccs_bl.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/gpccs_data.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/gpccs_inst.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/gpccs_sig.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/sw_bundle_init.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/sw_ctx.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/sw_method_init.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+nvidia/gm20b/gr/sw_nonctx.bin "$DESTDIR/lib/firmware/nvidia/gm20b"
+- install -d "$DESTDIR/lib/firmware/nvidia/tegra210"
+- install -m644 nvidia/tegra210/xusb.bin "$DESTDIR/lib/firmware/nvidia/tegra210"
+- install -m644 LICENCE.nvidia "$DESTDIR/lib/firmware"
