@@ -46,6 +46,7 @@ configure-commands:
 - scripts/config -e NFSD_V3
 - scripts/config -e NOUVEAU_PLATFORM_DRIVER
 - scripts/config -e DRM_TEGRA_STAGING
+- scripts/config -e CONFIG_USB_RTL8152
 - yes '' | make ARCH=arm64 oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm64
