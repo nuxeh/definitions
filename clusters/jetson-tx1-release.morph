@@ -1,0 +1,25 @@
+name: jetson-tx1-release
+kind: cluster
+description: |
+  Deploy all the systems for we support in a release.
+
+  This cluster morph is used by the tool 'scripts/do-release'. While
+  you can deploy the systems yourself, if you are making a Baserock release
+  then the script should be used.
+systems:
+- morph: systems/build-system-armv8l64-jetson-tx1.morph
+  deploy:
+    build-system-armv8l64-jetson:
+      type: extensions/rawdisk
+      location: build-system-armv8l64-jetson.img
+      DISK_SIZE: 3G
+      BOOT_DEVICE: /dev/mmcblk0p1
+      ROOT_DEVICE: /dev/mmcblk0p2
+      DTB_PATH: boot/tegra210-p2371-2180.dtb
+      BOOTLOADER_CONFIG_FORMAT: extlinux
+      BOOTLOADER_INSTALL: none
+      KERNEL_ARGS: cma=256M console=tty0 console=ttyS0,115200n8 no_console_suspend=1
+        nouveau.pstate=1
+      HOSTNAME: build-system-armv8l64-jetson
+      USE_PARTITIONING: yes
+      PARTITION_FILE: partitioning/jetson-tx1
