@@ -10,6 +10,6 @@ build-commands:
 - cp tegra210/nvidia/p2371-2180/* .
 - cbootimage -gbct --tegra 210 P2180_A00_LP4_DSC_204Mhz.bct.cfg P2180_A00_LP4_DSC_204Mhz.bct
 - sed -i 's/nvtboot.bin/u-boot.bin/' p2371-2180-emmc.img.cfg
-- cbootimage --tegra 210 p2371-2180-emmc.img.cfg tx1-bct-uboot.img
+- cbootimage --tegra 210 p2371-2180-emmc.img.cfg jetson-tx1-emmc.img
 install-commands:
-- install -D -m 755 tx1-bct-uboot.img "$DESTDIR/boot/tx1-bct-uboot.img"
+- install -D -m 755 jetson-tx1-emmc.img "$DESTDIR/boot/jetson-tx1-emmc.img"
