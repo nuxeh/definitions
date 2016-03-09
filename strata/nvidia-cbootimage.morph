@@ -1,0 +1,18 @@
+name: nvidia-cbootimage
+kind: stratum
+description: NVidia cbootimage tool for creating boot images for Tegra SoCs
+build-depends:
+- morph: strata/core.morph
+chunks:
+- name: cbootimage
+  morph: strata/nvidia-cbootimage/cbootimage.morph
+  repo: https://github.com/NVIDIA/cbootimage.git
+  ref: a64c3f12b1b048096d90c44db74d3d110cea6fff
+  unpetrify-ref: v1.7
+  build-depends:
+  - nvidia-cbootimage-configs
+- name: nvidia-cbootimage-configs
+  morph: strata/nvidia-cbootimage/cbootimage-configs.morph
+  repo: https://github.com/NVIDIA/cbootimage-configs.git 
+  ref: 3ec3057b8c19c4a3a53f12cdcb71190949f15838
+  unpetrify-ref: master

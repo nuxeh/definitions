@@ -1,0 +1,10 @@
+name: cbootimage
+kind: chunk
+build-system: manual
+configure-commands:
+- ./autogen.sh
+build-commands:
+- make
+install-commands:
+- install -m 755 src/cbootimage "$DESTDIR$PREFIX/bin/"
+- install -m 755 src/bct_dump "$DESTDIR$PREFIX/bin/"

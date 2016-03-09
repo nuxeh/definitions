@@ -12,6 +12,7 @@ description: |
   - TODO Note on memory timing / SMP
 build-depends:
 - morph: strata/core.morph
+- morph: strata/cbootimage.morph
 chunks:
 - name: device-tree-compiler@jetson-tx1
   morph: strata/bsp-jetson-tx1/device-tree-compiler@jetson-tx1.morph
