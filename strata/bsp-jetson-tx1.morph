@@ -12,7 +12,7 @@ description: |
   - TODO Note on memory timing / SMP
 build-depends:
 - morph: strata/core.morph
-- morph: strata/cbootimage.morph
+- morph: strata/nvidia-cbootimage.morph
 chunks:
 - name: device-tree-compiler@jetson-tx1
   morph: strata/bsp-jetson-tx1/device-tree-compiler@jetson-tx1.morph
@@ -37,3 +37,10 @@ chunks:
   repo: upstream:linux-firmware
   ref: 8d1fd61a3723ab8cb6b7bfeb8be38e16282cc1ed
   unpetrify-ref: master
+- name: boot-image@jetson-tx1
+  morph: strata/bsp-jetson-tx1/boot-image@jetson-tx1.morph
+  repo: https://github.com/NVIDIA/cbootimage-configs.git
+  ref: 3ec3057b8c19c4a3a53f12cdcb71190949f15838
+  unpetrify-ref: master
+  build-depends:
+  - u-boot@jetson-tx1

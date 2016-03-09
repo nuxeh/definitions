@@ -6,5 +6,6 @@ configure-commands:
 build-commands:
 - make
 install-commands:
+- mkdir -p "$DESTDIR$PREFIX/bin/"
 - install -m 755 src/cbootimage "$DESTDIR$PREFIX/bin/"
 - install -m 755 src/bct_dump "$DESTDIR$PREFIX/bin/"

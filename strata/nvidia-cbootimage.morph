@@ -9,8 +9,6 @@ chunks:
   repo: https://github.com/NVIDIA/cbootimage.git
   ref: a64c3f12b1b048096d90c44db74d3d110cea6fff
   unpetrify-ref: v1.7
-  build-depends:
-  - nvidia-cbootimage-configs
 - name: nvidia-cbootimage-configs
   morph: strata/nvidia-cbootimage/cbootimage-configs.morph
   repo: https://github.com/NVIDIA/cbootimage-configs.git 
