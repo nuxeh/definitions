@@ -52,7 +52,7 @@ build-commands:
 - make $MAKEFLAGS ARCH=arm64
 install-commands:
 - mkdir -p "$DESTDIR"/boot
-- cp arch/arm64/boot/Image "$DESTDIR"/boot/zImage
+- cp arch/arm64/boot/Image "$DESTDIR"/boot/Image
 - cp arch/arm64/boot/dts/nvidia/tegra210-p2371-2180.dtb "$DESTDIR"/boot/.
 - make modules
 - make INSTALL_MOD_PATH="$DESTDIR" modules_install

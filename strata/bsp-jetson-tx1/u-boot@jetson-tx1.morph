@@ -1,5 +1,6 @@
 name: u-boot@jetson-tx1
 kind: chunk
+build-system: manual
 configure-commands:
 - make ARCH=arm64 p2371-2180_config
 build-commands:

@@ -27,6 +27,7 @@ chunks:
 # TODO: move to an actual release if it works
   build-depends:
   - device-tree-compiler@jetson-tx1
+# ? Needed? and linux?
 - name: linux-jetson-tk1
   morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
   repo: upstream:linux-next
