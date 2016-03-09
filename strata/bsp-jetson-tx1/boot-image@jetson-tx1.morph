@@ -1,12 +1,15 @@
 name: boot-image@jetson-tx1
 kind: chunk
+description: |
+  This chunk builds a boot image including boot configuration table (BCT) and
+  U-Boot to be flashed to the Tegra 210 (X1) eMMC. The main purpose of the BCT
+  is to tell the preloader how to set up the module's RAM timings. TODO: expand
 build-system: manual
 build-commands:
 - cp /boot/u-boot.bin .
 - cp tegra210/nvidia/p2371-2180/* .
-- cbootimage -gbct -t210 P2180_A00_LP4_DSC_204Mhz.bct.cfg tx1.bct
+- cbootimage -gbct -t210 P2180_A00_LP4_DSC_204Mhz.bct.cfg P2180_A00_LP4_DSC_204Mhz.bct
 - sed -i 's/nvtboot.bin/u-boot.bin/' p2371-2180-emmc.img.cfg
 - cbootimage -t210 p2371-2180-emmc.img.cfg tx1-emmc.img
-- false
 install-commands:
 - install -m 755 tx1-emmc.img "$DESTDIR/boot/"
