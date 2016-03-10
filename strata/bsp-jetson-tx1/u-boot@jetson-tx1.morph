@@ -7,15 +7,16 @@ build-commands:
 - make
 - make tools
 install-commands:
-- mkdir -p "$DESTDIR$PREFIX/bin"
 - mkdir -p "$DESTDIR/boot"
-- mkdir -p "$DESTDIR/boot/u-boot/"
+- install -m 755 u-boot "$DESTDIR/boot/u-boot"
+- install -m 755 u-boot.bin "$DESTDIR/boot/u-boot.bin"
 - install -m 755 u-boot.img "$DESTDIR/boot/u-boot.img"
-- install -m 755 u-boot-dtb.bin "$DESTDIR/boot/u-boot.bin"
-# Not yet built
-#- install -m 755 u-boot-nodtb.bin "$DESTDIR/boot/u-boot/u-boot-nodtb.bin"
-- install -m 755 u-boot.dtb "$DESTDIR/boot/u-boot/tegra210-p2371-2180.dtb"
-- size -A u-boot | grep -w .bss | tr -s ' ' | cut -d ' ' -f 2 > "$DESTDIR/boot/u-boot/u-boot-bss-size"
+- install -m 755 u-boot.dtb "$DESTDIR/boot/u-boot.dtb"
+- install -m 755 u-boot-dtb.bin "$DESTDIR/boot/u-boot-dtb.bin"
+- install -m 755 u-boot-nodtb.bin "$DESTDIR/boot/u-boot-nodtb.bin"
+# Still needed?
+- size -A u-boot | grep -w .bss | tr -s ' ' | cut -d ' ' -f 2 > "$DESTDIR/boot/u-boot-bss-size"
+- mkdir -p "$DESTDIR$PREFIX/bin"
 - install -m 755 tools/img2brec.sh "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/jtagconsole "$DESTDIR$PREFIX/bin/."
 - install -m 755 tools/netconsole "$DESTDIR$PREFIX/bin/."
