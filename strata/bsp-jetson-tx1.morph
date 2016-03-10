@@ -22,7 +22,7 @@ chunks:
 - name: u-boot@jetson-tx1
   morph: strata/bsp-jetson-tx1/u-boot@jetson-tx1.morph
   repo: upstream:u-boot
-  ref: 5ec0003b19cbdf06ccd6941237cbc0d1c3468e2d
+  ref: 0156782feb7fb105b8e69de00c23d3eb60c4e3db
   unpetrify-ref: v2016.03-rc3
 # TODO: move to an actual release if it works
   build-depends:
