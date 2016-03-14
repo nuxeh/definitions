@@ -3,6 +3,7 @@ kind: chunk
 build-system: manual
 configure-commands:
 - make ARCH=arm64 p2371-2180_config
+- echo "CONFIG_BOOTCOMMAND='env set fdt_copy_node_names /cpus:/psci; run distro_bootcmd'" >> .config
 build-commands:
 - make
 - make tools
