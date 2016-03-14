@@ -1,6 +1,0 @@
-name: cbootimage-configs
-kind: chunk
-build-system: manual
-install-commands:
-- mkdir -p "$DESTDIR/opt/nvidia/cbootimage-configs/"
-- install -d -m 755 . "/opt/nvidia/cbootimage-configs/"
