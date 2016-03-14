@@ -22,8 +22,8 @@ chunks:
 - name: u-boot@jetson-tx1
   morph: strata/bsp-jetson-tx1/u-boot@jetson-tx1.morph
   repo: upstream:u-boot
-  ref: 0156782feb7fb105b8e69de00c23d3eb60c4e3db
-  unpetrify-ref: v2016.03-rc3
+  ref: 60237b2a539a8b13b80d589325f25c7d64281dc9
+  unpetrify-ref: baserock/edcragg/tegra-jetson-tx1-support
 # TODO: move to an actual release if it works
   build-depends:
   - device-tree-compiler@jetson-tx1
