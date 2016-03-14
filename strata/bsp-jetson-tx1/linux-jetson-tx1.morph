@@ -47,6 +47,42 @@ configure-commands:
 - scripts/config -e NOUVEAU_PLATFORM_DRIVER
 - scripts/config -e DRM_TEGRA_STAGING
 - scripts/config -m CONFIG_USB_RTL8152
+# New
+- scripts/config -y CONFIG_USB_RTL8152
+- scripts/config -y CONFIG_USB_USBNET
+- scripts/config -y CONFIG_USB_NET_AX8817X
+- scripts/config -y CONFIG_USB_NET_AX88179_178A
+- scripts/config -y CONFIG_USB_NET_CDCETHER
+- scripts/config -y CONFIG_USB_NET_CDC_NCM
+- scripts/config -y CONFIG_USB_NET_SMSC95XX
+- scripts/config -y CONFIG_USB_NET_NET1080
+- scripts/config -y CONFIG_USB_NET_CDC_SUBSET
+- scripts/config -y CONFIG_USB_BELKIN
+- scripts/config -y CONFIG_USB_ARMLINUX
+- scripts/config -y CONFIG_USB_NET_ZAURUS
+- scripts/config -y CONFIG_WLAN
+- scripts/config -y CONFIG_WIFI_CONTROL_FUNC
+- scripts/config -y CONFIG_BCMDHD_SDIO
+- scripts/config -y CONFIG_BCM4354
+- scripts/config -y CONFIG_BCMDHD_HW_OOB
+- scripts/config -y CONFIG_DHD_USE_SCHED_SCAN
+- scripts/config -y CONFIG_BCMDHD_CUSTOM_SYSFS_TEGRA
+- scripts/config -y CONFIG_BCMDHD_CUSTOM_NET_PERF_TEGRA
+- scripts/config -y CONFIG_IWLWIFI_OPMODE_MODULAR
+- scripts/config -y CONFIG_IWLWIFI_DEVICE_TESTMODE
+- scripts/config -y CONFIG_IWLWIFI_P2P
+- scripts/config -y CONFIG_USB_OTG
+- scripts/config -y CONFIG_USB_GADGET
+- scripts/config -y CONFIG_USB_TEGRA
+- scripts/config -y CONFIG_USB_ETH_RNDIS
+- scripts/config -m CONFIG_BCMDHD
+- scripts/config -m CONFIG_IWLWIFI
+- scripts/config -m CONFIG_IWLDVM
+- scripts/config -m CONFIG_IWLMVM
+- scripts/config -m CONFIG_USB_LIBCOMPOSITE
+- scripts/config -m CONFIG_USB_AUDIO
+- scripts/config -m CONFIG_USB_ETH
+- scripts/config -m CONFIG_USB_MASS_STORAGE
 - yes '' | make ARCH=arm64 oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm64
