@@ -47,6 +47,11 @@ configure-commands:
 - scripts/config -e NOUVEAU_PLATFORM_DRIVER
 - scripts/config -e DRM_TEGRA_STAGING
 - scripts/config -m CONFIG_USB_RTL8152
+# Tegra
+- scripts/config -e CONFIG_ARCH_TEGRA_210_SOC
+- scripts/config -e CONFIG_PHY_TEGRA_XUSB
+- scripts/config -e CONFIG_USB_XHCI_TEGRA
+- scripts/config -d CONFIG_USB_HID
 # New
 - scripts/config -e CONFIG_USB_RTL8152
 - scripts/config -e CONFIG_USB_USBNET
@@ -86,11 +91,11 @@ configure-commands:
 - yes '' | make ARCH=arm64 oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm64
+- make modules
 install-commands:
 - mkdir -p "$DESTDIR"/boot
 - cp arch/arm64/boot/Image "$DESTDIR"/boot/Image
 - cp arch/arm64/boot/dts/nvidia/tegra210-p2371-2180.dtb "$DESTDIR"/boot/.
-- make modules
 - make INSTALL_MOD_PATH="$DESTDIR" modules_install
 - install -d "$DESTDIR$PREFIX/src/linux"
 - |
