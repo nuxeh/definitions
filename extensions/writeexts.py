@@ -385,10 +385,6 @@ class WriteExtension(Extension):
             # boot if the kernel is on a filesystem where they are enabled.
             subprocess.check_output(
                 ['mkfs.btrfs','-f', '-L', 'baserock',
-                '--features', '^extref',
-                '--features', '^skinny-metadata',
-                '--features', '^mixed-bg',
-                '--nodesize', '4096',
                 location], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             if 'unrecognized option \'--features\'' in e.output:
