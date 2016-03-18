@@ -7,9 +7,23 @@ description: |
   kernel with some patches is currently required to get a fully
   accelerated graphics stack on this platform. Note that the SATA and
   networking will not work unless you have flashed the bootloader on
-  your board to the version of U-Boot built in this stratum. Also, the
-  CPUs on the Jetson run at a slow speed with this version of Linux.
+  your board to the version of U-Boot built in this stratum.
   - TODO Note on memory timing / SMP
+
+  - Currently the kernel is built from a downstream tree
+  - The version of U-Boot built in this stratum supports SMP via PSCI, by
+    copying device tree nodes from the downstream DTB. Currently only 4
+    Cortex-A57 of the eight (big.LITTLE) CPU cores are enabled.
+  - CPU and memory frequency scaling support is not yet developed
+  - Some non-GPL firmware is currently built into the kernel
+  - Camera module not tested
+  - Some non-fatal kernel dumps on boot need fixing
+  - WiFi/bluetooth not yet tested
+  - Graphics not yet tested
+  - SATA doesn't work
+  - SD doesn't work
+  - Various non-essential driver probing issues (regulators, etc)
+
 build-depends:
 - morph: strata/core.morph
 chunks:
@@ -23,17 +37,20 @@ chunks:
   repo: upstream:u-boot
   ref: 60237b2a539a8b13b80d589325f25c7d64281dc9
   unpetrify-ref: baserock/edcragg/tegra-jetson-tx1-support
-# TODO: move to an actual release if it works
   build-depends:
   - device-tree-compiler@jetson-tx1
 # ? Needed? and linux?
-- name: linux-jetson-tk1
-  morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
-  repo: https://github.com/nuxeh/linux-next.git
-  ref: d677d55cad6113a65968f9f841fce0e0f887e958
-  unpetrify-ref: v4.5-rc6
 - name: linux-firmware@jetson-tx1
   morph: strata/bsp-jetson-tx1/linux-firmware@jetson-tx1.morph
   repo: upstream:linux-firmware
   ref: deb1d83635089f105c119aec7a949ef6658f0d82
   unpetrify-ref: master
+- name: linux-jetson-tk1
+  morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
+  repo: https://github.com/nuxeh/linux-next.git
+  ref: 172e4097e07e0ccdd111695a4447741da2cd435c
+#  repo: https://github.com/Gnurou/linux.git
+#  ref: bf09e93acb86cd38aeabfca5db08f4c644d61391
+  unpetrify-ref: v4.5-rc6
+  build-depends:
+  - linux-firmware@jetson-tx1
