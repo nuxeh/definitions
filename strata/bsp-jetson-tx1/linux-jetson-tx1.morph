@@ -45,7 +45,9 @@ configure-commands:
 - scripts/config -e NFSD
 - scripts/config -e NFSD_V3
 - scripts/config --set-str EXTRA_FIRMWARE_DIR "/lib/firmware/"
-- scripts/config -e MMC_DEBUG
+#- scripts/config -e MMC_DEBUG
+- scripts/config -e ATA_VERBOSE_DEBUG
+- scripts/config -e ATA_DEBUG
 #- scripts/config -e NOUVEAU_PLATFORM_DRIVER
 #- scripts/config -e DRM_TEGRA_STAGING
 #- scripts/config -m CONFIG_USB_RTL8152
@@ -104,9 +106,9 @@ install-commands:
   (
       printf 'Makefile\0'
       printf 'Module.symvers\0'
-      find arch/arm -maxdepth 1 -name 'Makefile*' -print0
-      find arch/arm \( -name 'module.lds' -o -name 'Kbuild.platforms' -o -name 'Platform' \) -print0
-      find arch/arm \( -type d -a \( -name include -o -name scripts \) \) -o \
+      find arch/arm64 -maxdepth 1 -name 'Makefile*' -print0
+      find arch/arm64 \( -name 'module.lds' -o -name 'Kbuild.platforms' -o -name 'Platform' \) -print0
+      find arch/arm64 \( -type d -a \( -name include -o -name scripts \) \) -o \
                                \! -type d -a \( -path '*include/*' -o -path '*scripts/*' \) -print0
       find include -name 'asm*' -prune -o -print0
       find include/asm-generic -print0

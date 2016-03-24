@@ -3,26 +3,32 @@ kind: stratum
 description: |
   Platform-specific chunks for NVIDIA Jetson TX1
 
-  Support for the Tegra platform is still being developed. A very recent
-  kernel with some patches is currently required to get a fully
-  accelerated graphics stack on this platform. Note that the SATA and
-  networking will not work unless you have flashed the bootloader on
-  your board to the version of U-Boot built in this stratum.
-  - TODO Note on memory timing / SMP
+  Support for the Tegra platform is still being developed. A very recent kernel
+  with some patches is currently required to get a fully accelerated graphics
+  stack on this platform.
 
-  - Currently the kernel is built from a downstream tree
+  - Currently the kernel is built from upstream linux-next, with downstream
+    patches applied
   - The version of U-Boot built in this stratum supports SMP via PSCI, by
     copying device tree nodes from the downstream DTB. Currently only 4
     Cortex-A57 of the eight (big.LITTLE) CPU cores are enabled.
   - CPU and memory frequency scaling support is not yet developed
   - Some non-GPL firmware is currently built into the kernel
-  - Camera module not tested
   - Some non-fatal kernel dumps on boot need fixing
-  - WiFi/bluetooth not yet tested
-  - Graphics not yet tested
-  - SATA doesn't work
-  - SD doesn't work
   - Various non-essential driver probing issues (regulators, etc)
+
+  Some things don't currently work:
+  - SATA
+  - SD
+  - Hardware fan control
+
+  Some hardware has not yet been tested:
+  - GPU
+  - WiFi/bluetooth
+  - Camera module
+
+  The downstream NVidia L4T 3.10.67 kernel does not build under Baserock since
+  it appears to need a 32-bit cross-compiler
 
 build-depends:
 - morph: strata/core.morph
@@ -47,8 +53,8 @@ chunks:
   unpetrify-ref: master
 - name: linux-jetson-tk1
   morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
-  repo: https://github.com/nuxeh/linux-next.git
-  ref: 172e4097e07e0ccdd111695a4447741da2cd435c
+  repo: https://github.com/nuxeh/linux.git
+  ref: dd58249fecb3e9c6da039d2da54bd34d083edddb
 #  repo: https://github.com/Gnurou/linux.git
 #  ref: bf09e93acb86cd38aeabfca5db08f4c644d61391
   unpetrify-ref: v4.5-rc6
