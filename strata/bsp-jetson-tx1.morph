@@ -54,7 +54,7 @@ chunks:
 - name: linux-jetson-tk1
   morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
   repo: https://github.com/nuxeh/linux-next.git
-  ref: 0520f59bc8e7aa3e840246732ec7349796bd567f
+  ref: 172e4097e07e0ccdd111695a4447741da2cd435c
 #  repo: https://github.com/Gnurou/linux.git
 #  ref: bf09e93acb86cd38aeabfca5db08f4c644d61391
   unpetrify-ref: v4.5-rc6

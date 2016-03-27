@@ -45,6 +45,7 @@ configure-commands:
 - scripts/config -e NFSD
 - scripts/config -e NFSD_V3
 - scripts/config --set-str EXTRA_FIRMWARE_DIR "/lib/firmware/"
+- scripts/config -e ARCH_TEGRA_2x_SOC
 #- scripts/config -e MMC_DEBUG
 - scripts/config -e ATA_VERBOSE_DEBUG
 - scripts/config -e ATA_DEBUG
