@@ -14,12 +14,12 @@ description: |
     Cortex-A57 of the eight (big.LITTLE) CPU cores are enabled.
   - CPU and memory frequency scaling support is not yet developed
   - Some non-GPL firmware is currently built into the kernel
-  - Some non-fatal kernel dumps on boot need fixing
+  - A non-fatal kernel dump on boot needs fixing
   - Various non-essential driver probing issues (regulators, etc)
 
-  Some things don't currently work:
+  Some hardware currently doesn't work:
   - SATA
-  - SD
+  - External SD card
   - Hardware fan control
 
   Some hardware has not yet been tested:
@@ -28,7 +28,9 @@ description: |
   - Camera module
 
   The downstream NVidia L4T 3.10.67 kernel does not build under Baserock since
-  it appears to need a 32-bit cross-compiler
+  it requires a 32-bit cross-compiler. Some work is needed to get systems with
+  the required software to test graphics acceleration to build on the ARMv8
+  architecture.
 
 build-depends:
 - morph: strata/core.morph
@@ -45,7 +47,6 @@ chunks:
   unpetrify-ref: baserock/edcragg/tegra-jetson-tx1-support
   build-depends:
   - device-tree-compiler@jetson-tx1
-# ? Needed? and linux?
 - name: linux-firmware@jetson-tx1
   morph: strata/bsp-jetson-tx1/linux-firmware@jetson-tx1.morph
   repo: upstream:linux-firmware
@@ -53,10 +54,8 @@ chunks:
   unpetrify-ref: master
 - name: linux-jetson-tk1
   morph: strata/bsp-jetson-tx1/linux-jetson-tx1.morph
-  repo: https://github.com/nuxeh/linux-next.git
-  ref: 172e4097e07e0ccdd111695a4447741da2cd435c
-#  repo: https://github.com/Gnurou/linux.git
-#  ref: bf09e93acb86cd38aeabfca5db08f4c644d61391
+  repo: upstream:linux-next
+  ref: bf09e93acb86cd38aeabfca5db08f4c644d61391
   unpetrify-ref: v4.5-rc6
   build-depends:
   - linux-firmware@jetson-tx1
