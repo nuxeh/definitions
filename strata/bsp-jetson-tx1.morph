@@ -8,7 +8,7 @@ description: |
   stack on this platform.
 
   - Currently the kernel is built from upstream linux-next, with downstream
-    patches applied
+    patches applied [1]
   - The version of U-Boot built in this stratum supports SMP via PSCI, by
     copying device tree nodes from the downstream DTB. Currently only 4
     Cortex-A57 of the eight (big.LITTLE) CPU cores are enabled.
@@ -27,10 +27,15 @@ description: |
   - WiFi/bluetooth
   - Camera module
 
-  The downstream NVidia L4T 3.10.67 kernel does not build under Baserock since
-  it requires a 32-bit cross-compiler. Some work is needed to get systems with
-  the required software to test graphics acceleration to build on the ARMv8
-  architecture.
+  The downstream NVidia L4T 3.10.67 kernel does not build natively under
+  Baserock since it requires a 32-bit cross-compiler [2]. Some work is needed to
+  get systems with the required software to test graphics acceleration to build
+  on the ARMv8 architecture. A downstream version of U-Boot may be required to
+  use the graphics drivers. [3]
+
+  [1] https://github.com/Gnurou/linux/tree/staging/work
+  [2]
+  [3] https://github.com/NVIDIA/tegra-nouveau-rootfs
 
 build-depends:
 - morph: strata/core.morph
