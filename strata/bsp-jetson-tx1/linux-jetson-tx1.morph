@@ -45,8 +45,9 @@ configure-commands:
 - scripts/config -e NFSD
 - scripts/config -e NFSD_V3
 - scripts/config --set-str EXTRA_FIRMWARE_DIR "/lib/firmware/"
-- scripts/config -e NOUVEAU_PLATFORM_DRIVER
-- scripts/config -e DRM_TEGRA_STAGING
+# Unused for now:
+#- scripts/config -e NOUVEAU_PLATFORM_DRIVER
+#- scripts/config -e DRM_TEGRA_STAGING
 - yes '' | make ARCH=arm64 oldconfig
 build-commands:
 - make $MAKEFLAGS ARCH=arm64
