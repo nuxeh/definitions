@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2013  Codethink Limited
+# Copyright (C) 2013-2016  Codethink Limited
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,13 +75,23 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
         chunk_meta_path = os.path.join(target_root, 'baserock', chunk)
 
         with open(chunk_meta_path, 'r') as f:
-            chunk_meta_data = json.load(f)
+            chunk_meta_data = yaml.load(f)
 
-        if not 'contents' in chunk_meta_data:
+        try:
+            if not 'contents' in chunk_meta_data:
+                # Attempt to read YBD formatted metadata
+                chunk_contents = []
+                for prod in chunk_meta_data['products']:
+                    chunk_contents.append(prod['files'])
+            else:
+                # This is a Morph chunk
+                chunk_contents = reversed(chunk_meta_data['contents'])
+        except (KeyError):
             raise writeexts.ExtensionError(
-                'Chunk %s does not have a "contents" list' % chunk)
+                'Chunk %s does not contain valid contents metadata' % chunk)
+
         updated_contents = []
-        for content_entry in reversed(chunk_meta_data['contents']):
+        for content_entry in chunk_contents:
             pat = re.compile(pattern)
             if len(pattern) == 0 or not pat.match(content_entry):
                 self.remove_content_entry(target_root, content_entry)
