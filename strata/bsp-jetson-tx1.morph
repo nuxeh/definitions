@@ -34,7 +34,7 @@ description: |
   use the graphics drivers. [3]
 
   [1] https://github.com/Gnurou/linux/tree/staging/work
-  [2]
+  [2] 
   [3] https://github.com/NVIDIA/tegra-nouveau-rootfs
 
 build-depends:
