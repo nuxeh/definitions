@@ -154,6 +154,3 @@ def meta_load_from_tarball(self, system_tarball_path):
 
     return m.get_metas()
 
-
-#TODO
-#tests?
