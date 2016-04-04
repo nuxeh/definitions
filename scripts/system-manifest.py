@@ -158,8 +158,7 @@ class VersionGuesser(object):
         status('%s: Guessing version of %s' % (repo, ref))
         version = None
         try:
-            # This can use a remote repo cache if available, to avoid having
-            # to clone every repo locally.
+            # List files on Baserock cache server
             tree = scriptslib.cache_ls(repo, ref)
 
             for guesser in self.guessers:

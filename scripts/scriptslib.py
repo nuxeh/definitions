@@ -23,7 +23,6 @@ import urlparse
 import tarfile
 import sys
 
-
 class ScriptError(Exception):
     def __init__(self, message):
         status(message)
@@ -52,13 +51,13 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
 
 def cache_get_file(repo_url, ref, filename):
     '''Obtain a single file from a repo on the Baserock cache server'''
-    return _cache_request('files?repo=%s&ref=%s&filename=%s' %
-                         [urllib.quote(s) for s in (repo_url, ref, filename)])
+    return _cache_request('files?repo=%s&ref=%s&filename=%s' % tuple(
+                        [urllib.quote(s) for s in (repo_url, ref, filename)]))
 
 def cache_ls(repo_url, ref):
     '''Get a list of files in a repo on the Baserock cache server'''
-    return _cache_request('trees?repo=%s&ref=%s' % 
-                           [urllib.quote(s) for s in (repo_url, ref)])
+    return _cache_request('trees?repo=%s&ref=%s' % tuple(
+                           [urllib.quote(s) for s in (repo_url, ref)]))
 
 def _cache_request(path):
     server_url = 'http://git.baserock.org:8080/'
