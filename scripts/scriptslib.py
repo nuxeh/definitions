@@ -49,19 +49,19 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
 
 def cache_get_file(repo_url, ref, filename):
     '''Obtain a single file from a repo on the Baserock cache server'''
-        return _cache_request('files?repo=%s&ref=%s&filename=%s' %
+    return _cache_request('files?repo=%s&ref=%s&filename=%s' %
                         [urllib.quote(s) for s in (repo_url, ref, filename)]
 
 def cache_ls(repo_url, ref):
     '''Get a list of files in a repo on the Baserock cache server'''
-        return _cache_request('trees?repo=%s&ref=%s' % 
-                              [urllib.quote(s) for s in (repo_url, ref)])
+    return _cache_request('trees?repo=%s&ref=%s' % 
+                           [urllib.quote(s) for s in (repo_url, ref)])
 
 def _cache_request(path):
-        server_url = 'http://git.baserock.org:8080/'
-        url = urlparse.urljoin(server_url, '/1.0/%s' % path)
-        fetch = urllib2.urlopen(url)
-        return fetch.read()
+    server_url = 'http://git.baserock.org:8080/'
+    url = urlparse.urljoin(server_url, '/1.0/%s' % path)
+    fetch = urllib2.urlopen(url)
+    return fetch.read()
 
 
 def definitions_root():
@@ -74,8 +74,8 @@ def load_yaml_file(yaml_file):
 
 
 class BaserockMeta(object):
-    '''An object representing Baserock metadata contained in a Baserock system
-       image, for available metadata formats'''
+    '''An object representing Baserock metadata contained in a Baserock
+       system image, for available metadata formats'''
 
     def __init__(self):
         self.chunk_metas = []
