@@ -21,7 +21,10 @@ import re
 import contextlib
 import tempfile
 import scriptslib
-from scriptslib import status, ScriptError
+from scriptslib import ScriptError
+
+
+verbose = False
 
 
 def generate_manifest(args):
@@ -54,13 +57,23 @@ def generate_manifest(args):
 
     '''
 
-    if len(args) != 1:
-        ScriptError('Usage: system-manifest.py tarball_path')
+    global verbose
 
-    artifact = args[0]
+    if args[0] == '-v':
+	verbose = True
+
+    if len(args) < 1 + int(verbose):
+        ScriptError('Usage: system-manifest.py [-v] tarball_path')
+
+    artifact = args[-1]
 
     generator = ManifestGenerator()
     generator.generate(artifact)
+
+
+def status(message):
+    if verbose:
+	scriptslib.status(message)
 
 
 class ProjectVersionGuesser(object):
@@ -91,7 +104,7 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
             # First, try to grep for AC_INIT()
             version = self._check_ac_init(data)
             if version:
-                status('%s: Version of %s detected '
+                status('Version of %s %s detected '
                        'via %s:AC_INIT: %s' % (repo, ref, filename, version))
                 break
 
@@ -99,7 +112,7 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
             version = self._check_autoconf_package_version(
                 repo, ref, filename, data)
             if version:
-                status('%s: Version of %s detected by processing '
+                status('Version of %s %s detected by processing '
                        '%s: %s' % (repo, ref, filename, version))
                 break
         return version
@@ -140,8 +153,8 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
                 if output and output[0].isdigit():
                     version = output
             if exit_code != 0:
-                status('%s: Failed to detect version from '
-                       '%s:%s' % (repo, ref, filename))
+                status('Failed to detect version from '
+                       '%s %s:%s' % (repo, ref, filename))
         finally:
             shutil.rmtree(tempdir)
         return version
@@ -155,7 +168,7 @@ class VersionGuesser(object):
         ]
 
     def guess_version(self, repo, ref):
-        status('%s: Guessing version of %s' % (repo, ref))
+        status('Guessing version of %s %s' % (repo, ref))
         version = None
         try:
             # List files on Baserock cache server
@@ -166,7 +179,7 @@ class VersionGuesser(object):
                 if version:
                     break
         except BaseException as err:
-            status('%s: Failed to list files in %s' % (repo, ref))
+            status('Failed to list files in %s %s' % (repo, ref))
         return version
 
 class ManifestGenerator(object):
@@ -178,6 +191,7 @@ class ManifestGenerator(object):
         # Collect all meta information about the system, its strata
         # and its chunks that we are interested in.
         artifacts = []
+	status('Extracting metadata from tarball...')
         metadata_dict = scriptslib.meta_load_from_tarball(artifact)
 
         for metadata in metadata_dict:
@@ -244,3 +258,8 @@ class ManifestGenerator(object):
 
 if __name__ == "__main__":
     generate_manifest(sys.argv[1:])
+
+# TODO
+# - Test with ybd
+# - Clean output
+# - Clean debug messages
