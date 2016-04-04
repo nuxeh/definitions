@@ -59,13 +59,12 @@ def generate_manifest(args):
     artifact = args[0]
 
     generator = ManifestGenerator()
-    generator.generate(artifact, dirname)
+    generator.generate(artifact)
 
 
 class ProjectVersionGuesser(object):
 
-    def __init__(self, repo_cache, interesting_files):
-        self.repo_cache = repo_cache
+    def __init__(self, interesting_files):
         self.interesting_files = interesting_files
 
     def file_contents(self, repo, ref, tree):
@@ -77,8 +76,8 @@ class ProjectVersionGuesser(object):
 
 class AutotoolsVersionGuesser(ProjectVersionGuesser):
 
-    def __init__(self, repo_cache):
-        ProjectVersionGuesser.__init__(self, repo_cache, [
+    def __init__(self):
+        ProjectVersionGuesser.__init__(self, [
             'configure.ac',
             'configure.in',
             'configure.ac.in',
@@ -150,9 +149,8 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
 class VersionGuesser(object):
 
     def __init__(self):
-        self.repo_cache = morphlib.util.new_repo_cache(app) #
         self.guessers = [
-            AutotoolsVersionGuesser(self.repo_cache)
+            AutotoolsVersionGuesser()
         ]
 
     def guess_version(self, repo, ref):
@@ -177,11 +175,11 @@ class ManifestGenerator(object):
     def __init__(self):
         self.version_guesser = VersionGuesser()
 
-    def generate(self, artifact, dirname):
+    def generate(self, artifact):
         # Collect all meta information about the system, its strata
         # and its chunks that we are interested in.
         artifacts = []
-        metadata_dict = scriptslib.meta_load_from_tarball(open(artifact))
+        metadata_dict = scriptslib.meta_load_from_tarball(artifact)
 
         for metadata in metadata_dict:
             # Try to guess the version of this artifact
