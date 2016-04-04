@@ -105,6 +105,9 @@ class BaserockMeta(object):
     def meta_import_ybd(self, meta_text):
         source = yaml.load(meta_text)
 
+        if 'repo' not in source:
+            return # Probably a stratum (no morph equivalent meta)
+
         repo = parse_repo_alias(source['repo'])
         source_name = '-'.join(
                       source['products'][0]['artifact'].split('-')[:-1])
@@ -112,7 +115,7 @@ class BaserockMeta(object):
         for meta in source['products']:
 
             self.add_meta({
-                'kind':          'stratum',
+                'kind':          'chunk',
                 'source_name':   source_name,
                 'artifact_name': meta['artifact'],
                 'repo':          repo,
