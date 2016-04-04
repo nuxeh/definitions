@@ -20,6 +20,14 @@ import subprocess
 import urllib2
 import urllib
 import urlparse
+import sys
+
+
+class ScriptError(Exception):
+    def __init__(self, message):
+        sys.stderr.write(message)
+        sys.exit(1)
+
 
 aliases = {
   'baserock:': 'git://%(trove)s/baserock/',
@@ -38,6 +46,7 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
     except KeyError as e:
         raise Exception("Unknown repo-alias \"%s\"" % repo)
 
+
 def cache_get_file(repo_url, ref, filename):
     '''Obtain a single file from a repo on the Baserock cache server'''
         return _cache_request('files?repo=%s&ref=%s&filename=%s' %
@@ -54,6 +63,7 @@ def _cache_request(path):
         fetch = urllib2.urlopen(url)
         return fetch.read()
 
+
 def definitions_root():
     return subprocess.check_output(
         ["git", "rev-parse", "--show-toplevel"]).strip()
@@ -61,6 +71,7 @@ def definitions_root():
 def load_yaml_file(yaml_file):
     with open(yaml_file, 'r') as f:
         return yaml.safe_load(f)
+
 
 class BaserockMeta(object):
     '''An object representing Baserock metadata contained in a Baserock system

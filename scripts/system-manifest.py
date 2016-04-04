@@ -20,14 +20,6 @@ import re
 import contextlib
 import tempfile
 import scriptslib
-from scriptslib import ScriptError
-
-
-class ScriptError(Exception):
-
-    def __init__(self, message):
-        sys.stderr.write(message)
-        sys.exit(1)
 
 
 def generate_manifest(args):
