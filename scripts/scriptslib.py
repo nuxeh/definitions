@@ -26,7 +26,7 @@ import sys
 
 class ScriptError(Exception):
     def __init__(self, message):
-        sys.stderr.write(message)
+        status(message)
         sys.exit(1)
 
 def status(message):
