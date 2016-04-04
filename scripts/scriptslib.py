@@ -149,7 +149,7 @@ def meta_load_from_tarball(system_tarball_path):
 
         if not metas:
             raise Exception('No Baserock metadata found '
-                            'in %s' % system_tarball)
+                            'in %s' % system_tarball_path)
 
         m = BaserockMeta()
         for meta in metas:
