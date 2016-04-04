@@ -13,19 +13,53 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import sys
 import glob
-import pyyaml
 import os
 import re
 import contextlib
 import tempfile
 import scriptslib
+from scriptslib import ScriptError
 
 
-class NotASystemArtifactError(Exception):
+def generate_manifest(args):
+    '''Generate a content manifest for a system image.
 
-    def __init__(self, artifact):
-        Exception.__init__(self, '%s is not a system artifact' % artifact)
+    Command line arguments:
+
+    * `SYSTEM-ARTIFACT` is a filename to the system artifact
+      (root filesystem) for the built system.
+
+    This command generates a manifest for a built system image.
+    The manifest includes the constituent artifacts,
+    a guess at the component version, the exact commit for
+    the component (commit SHA1, repository URL, git symbolic
+    ref), and the morphology filename.
+
+
+    The manifest includes each constituent artifact, with several
+    columns of data:
+    
+    * 7-char cache key with the artifact kind (system, stratum, chunk),
+    artifact name, and version (if guessable) added
+    * the git repository
+    * the symbolic reference
+    * a 7-char commit id
+
+    Example:
+
+        ./scripts/system-manifest.py /src/cache/artifacts/foo-rootfs
+
+    '''
+
+    if len(args) != 1:
+        ScriptError('Usage: system-manifest.py tarball_path')
+
+    artifact = args[0]
+
+    generator = ManifestGenerator()
+    generator.generate(artifact, dirname)
 
 
 class ProjectVersionGuesser(object):
@@ -133,7 +167,7 @@ class VersionGuesser(object):
                 version = guesser.guess_version(repo, ref, tree)
                 if version:
                     break
-        except cliapp.AppException as err:
+        except BaseException as err:
             print('%s: Failed to list files in %s' % (repo, ref))
         return version
 
@@ -152,7 +186,7 @@ class ManifestGenerator(object):
         for metadata in metadata_dict:
             # Try to guess the version of this artifact
             version = self.version_guesser.guess_version(
-                    metadata['repo'], metadata['sha1'])
+                      metadata['repo'], metadata['sha1'])
             if version is None:
                 version = ''
             else:
@@ -211,44 +245,5 @@ class ManifestGenerator(object):
                              artifact['sha1']))
 
 
-def generate_manifest(self, args):
-    '''Generate a content manifest for a system image.
-
-    Command line arguments:
-
-    * `SYSTEM-ARTIFACT` is a filename to the system artifact
-      (root filesystem) for the built system.
-
-    This command generates a manifest for a built system image.
-    The manifest includes the constituent artifacts,
-    a guess at the component version, the exact commit for
-    the component (commit SHA1, repository URL, git symbolic
-    ref), and the morphology filename.
-
-
-    The manifest includes each constituent artifact, with several
-    columns of data:
-    
-    * 7-char cache key with the artifact kind (system, stratum, chunk),
-    artifact name, and version (if guessable) added
-    * the git repository
-    * the symbolic reference
-    * a 7-char commit id
-
-    Example:
-
-        morph generate-manifest-genivi /src/cache/artifacts/foo-rootfs
-
-    '''
-
-    if len(args) != 1:
-        raise cliapp.AppException('morph generate-manifest expects '
-                                  'a system image as its input')
-
-    artifact = args[0]
-
-    generator = ManifestGenerator()
-    generator.generate(artifact, dirname)
-
-
-# __main__
+if __name__ == "__main__":
+    generate_manifest(sys.argv[1:])
