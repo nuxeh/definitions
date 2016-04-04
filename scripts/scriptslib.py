@@ -144,7 +144,7 @@ def meta_load_from_tarball(system_tarball_path):
 
     with tarfile.open(system_tarball_path) as tar:
         metas = [tarinfo for tarinfo in tar.getmembers()
-                 if tarinfo.name.startswith('baserock/')
+                 if 'baserock/' in tarinfo.name # ybd prepends './'
                 and tarinfo.name.endswith('.meta')]
 
         if not metas:
