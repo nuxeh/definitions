@@ -227,7 +227,7 @@ class ManifestGenerator(object):
         return '%%-%is\t' \
                '%%-%is\t' \
                '%%-%is\t' \
-               '%%-%is\n' % (
+               '%%-%is' % (
                 colwidths['fst_col'],
                 colwidths['repo'],
                 colwidths['original_ref'],
