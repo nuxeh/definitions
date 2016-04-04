@@ -12,8 +12,8 @@ strata:
   morph: strata/core.morph
 - name: foundation
   morph: strata/foundation.morph
-- name: bsp-armv7l-altera-socfpga-devkit
-  morph: strata/bsp-armv7l-altera-socfpga-devkit.morph
+- name: bsp-jetson-tx1
+  morph: strata/bsp-jetson-tx1.morph
 configuration-extensions:
 - extensions/set-hostname
 - extensions/add-config-files
