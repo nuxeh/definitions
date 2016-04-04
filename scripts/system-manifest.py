@@ -23,6 +23,13 @@ import scriptslib
 from scriptslib import ScriptError
 
 
+class ScriptError(Exception):
+
+    def __init__(self, message):
+        sys.stderr.write(message)
+        sys.exit(1)
+
+
 def generate_manifest(args):
     '''Generate a content manifest for a system image.
 
@@ -91,7 +98,7 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
             # First, try to grep for AC_INIT()
             version = self._check_ac_init(data)
             if version:
-                print('%s: Version of %s detected '
+                sys.stderr.write('%s: Version of %s detected '
                       'via %s:AC_INIT: %s' % (repo, ref, filename, version))
                 break
 
@@ -99,7 +106,7 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
             version = self._check_autoconf_package_version(
                 repo, ref, filename, data)
             if version:
-                print('%s: Version of %s detected '
+                sys.stderr.write('%s: Version of %s detected '
                       'by processing %s: %s' % (repo, ref, filename, version))
                 break
         return version
@@ -140,8 +147,8 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
                 if output and output[0].isdigit():
                     version = output
             if exit_code != 0:
-                print('%s: Failed to detect version from '
-                      '%s:%s' % (repo, ref, filename))
+                sys.stderr.write('%s: Failed to detect version from '
+                                 '%s:%s' % (repo, ref, filename))
         finally:
             shutil.rmtree(tempdir)
         return version
@@ -156,7 +163,7 @@ class VersionGuesser(object):
         ]
 
     def guess_version(self, repo, ref):
-        print('%s: Guessing version of %s' % (repo, ref))
+        sys.stderr.write('%s: Guessing version of %s' % (repo, ref))
         version = None
         try:
             # This can use a remote repo cache if available, to avoid having
@@ -168,7 +175,7 @@ class VersionGuesser(object):
                 if version:
                     break
         except BaseException as err:
-            print('%s: Failed to list files in %s' % (repo, ref))
+            sys.stderr.write('%s: Failed to list files in %s' % (repo, ref))
         return version
 
 
