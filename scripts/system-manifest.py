@@ -21,6 +21,7 @@ import re
 import contextlib
 import tempfile
 import scriptslib
+from scriptslib import status, ScriptError
 
 
 def generate_manifest(args):
@@ -90,16 +91,16 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
             # First, try to grep for AC_INIT()
             version = self._check_ac_init(data)
             if version:
-                sys.stderr.write('%s: Version of %s detected '
-                      'via %s:AC_INIT: %s' % (repo, ref, filename, version))
+                status('%s: Version of %s detected '
+                       'via %s:AC_INIT: %s' % (repo, ref, filename, version))
                 break
 
             # Then, try running autoconf against the configure script
             version = self._check_autoconf_package_version(
                 repo, ref, filename, data)
             if version:
-                sys.stderr.write('%s: Version of %s detected '
-                      'by processing %s: %s' % (repo, ref, filename, version))
+                status('%s: Version of %s detected by processing '
+                       '%s: %s' % (repo, ref, filename, version))
                 break
         return version
 
@@ -139,8 +140,8 @@ class AutotoolsVersionGuesser(ProjectVersionGuesser):
                 if output and output[0].isdigit():
                     version = output
             if exit_code != 0:
-                sys.stderr.write('%s: Failed to detect version from '
-                                 '%s:%s' % (repo, ref, filename))
+                status('%s: Failed to detect version from '
+                       '%s:%s' % (repo, ref, filename))
         finally:
             shutil.rmtree(tempdir)
         return version
@@ -154,7 +155,7 @@ class VersionGuesser(object):
         ]
 
     def guess_version(self, repo, ref):
-        sys.stderr.write('%s: Guessing version of %s' % (repo, ref))
+        status('%s: Guessing version of %s' % (repo, ref))
         version = None
         try:
             # This can use a remote repo cache if available, to avoid having
@@ -166,9 +167,8 @@ class VersionGuesser(object):
                 if version:
                     break
         except BaseException as err:
-            sys.stderr.write('%s: Failed to list files in %s' % (repo, ref))
+            status('%s: Failed to list files in %s' % (repo, ref))
         return version
-
 
 class ManifestGenerator(object):
 

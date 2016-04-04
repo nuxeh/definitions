@@ -29,6 +29,8 @@ class ScriptError(Exception):
         sys.stderr.write(message)
         sys.exit(1)
 
+def status(message):
+    sys.stderr.write('%s\n' % message)
 
 aliases = {
   'baserock:': 'git://%(trove)s/baserock/',
