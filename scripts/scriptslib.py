@@ -60,6 +60,7 @@ def cache_ls(repo_url, ref):
                            [urllib.quote(s) for s in (repo_url, ref)]))
 
 def _cache_request(path):
+    '''Resolve a cache URL and return a string'''
     server_url = 'http://git.baserock.org:8080/'
     url = urlparse.urljoin(server_url, '/1.0/%s' % path)
     fetch = urllib2.urlopen(url)
