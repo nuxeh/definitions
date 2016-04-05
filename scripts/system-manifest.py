@@ -63,7 +63,7 @@ def generate_manifest(args):
 	verbose = True
 
     if len(args) < 1 + int(verbose):
-        ScriptError('Usage: system-manifest.py [-v] tarball_path')
+        ScriptError('usage: system-manifest.py [-v] tarball-path')
 
     artifact = args[-1]
 
