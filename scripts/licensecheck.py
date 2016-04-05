@@ -84,6 +84,8 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
     if repo_name.endswith(".git"):
         repo_name = repo_name[:-4]
 
+    repo_url = scriptslib.parse_repo_alias(repo)
+
     # Check if ref is sha1 to speedup
     if len(ref) == 40 and all(c in string.hexdigits for c in ref):
         license_file = license_file_name(repo_name, ref, licenses_dir)
@@ -103,8 +105,15 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
     else:
         sys.stderr.write("Getting repo '%s' ...\n" % repo_name)
         with open(os.devnull, 'w') as devnull:
-            subprocess.check_call(["morph", "get-repo", name, clone_path],
-                stdout=devnull, stderr=devnull)
+            try:
+                subprocess.check_call(["morph", "get-repo", name, clone_path],
+                                      stdout=devnull, stderr=devnull)
+            except (OSError, subprocess.CalledProcessError):
+                sys.stderr.write("Falling back to git clone.\n")
+                # Use a recursive clone to also clone submodules
+                subprocess.check_call(["git", "clone", "--recursive",
+                                       repo_url, clone_path],
+                                       stdout=devnull, stderr=devnull)
 
     sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=clone_path).strip()
@@ -144,6 +153,9 @@ def main():
             help='DIR to store chunk license files (default ./licenses)')
 
     args = parser.parse_args()
+
+    if not os.path.exists(args.repos_dir):
+        os.makedirs(args.repos_dir)
 
     system = scriptslib.load_yaml_file(args.system)
     license_files = []
