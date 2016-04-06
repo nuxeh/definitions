@@ -110,14 +110,15 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
         sys.stderr.write("Getting repo '%s' ...\n" % repo_name)
         with open(os.devnull, 'w') as devnull:
             try:
-                subprocess.check_call(["morph", "get-repo", name, clone_path],
-                                      stdout=devnull, stderr=devnull)
+                subprocess.check_call(
+                    ["morph", "get-repo", name, clone_path],
+                    stdout=devnull, stderr=devnull)
             except (OSError, subprocess.CalledProcessError):
                 sys.stderr.write("Falling back to git clone.\n")
                 # Use a recursive clone to also clone submodules
-                subprocess.check_call(["git", "clone", "--recursive",
-                                       repo_url, clone_path],
-                                       stdout=devnull, stderr=devnull)
+                subprocess.check_call(
+                    ["git", "clone", "--recursive", repo_url, clone_path],
+                    stdout=devnull, stderr=devnull)
 
     sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=clone_path).strip()
