@@ -18,6 +18,5 @@ configuration-extensions:
 - extensions/add-config-files
 - extensions/nfsboot
 - extensions/install-files
-- extensions/moonshot-kernel
 - extensions/install-essential-files
 - extensions/strip-gplv3
