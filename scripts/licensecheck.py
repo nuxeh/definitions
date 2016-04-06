@@ -100,6 +100,9 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
             subprocess.check_call([
                 "git", "remote", "update", "origin", "--prune"],
                 stderr=devnull, stdout=devnull, cwd=clone_path)
+            # make sure submodules are updated
+            subprocess.check_call(["git", "pull", "--recurse-submodules"],
+                stderr=devnull, stdout=devnull, cwd=clone_path)
             subprocess.check_call(["git", "checkout", ref], stderr=devnull,
                 stdout=devnull, cwd=clone_path)
     else:
