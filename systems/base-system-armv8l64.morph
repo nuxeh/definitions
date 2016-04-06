@@ -20,3 +20,4 @@ configuration-extensions:
 - extensions/install-files
 - extensions/moonshot-kernel
 - extensions/install-essential-files
+- extensions/strip-gplv3
