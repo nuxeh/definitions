@@ -80,7 +80,7 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
             # Attempt to read YBD formatted metadata
             chunk_contents = []
             for prod in chunk_meta_data['products']:
-                chunk_contents.append(prod['files'])
+                chunk_contents += prod['files']
         else:
             raise writeexts.ExtensionError(
                 'Chunk %s does not contain valid contents metadata' % chunk)
