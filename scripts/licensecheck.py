@@ -118,6 +118,8 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
                                        repo_url, clone_path],
                                        stdout=devnull, stderr=devnull)
 
+    subprocess.check_call(["git", "show"], cwd=clone_path)
+
     sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=clone_path).strip()
 
