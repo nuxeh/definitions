@@ -100,7 +100,7 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
             subprocess.check_call([
                 "git", "remote", "update", "origin", "--prune"],
                 stderr=devnull, stdout=devnull, cwd=clone_path)
-            # Ensure submodules are updated
+            # Update submodules
             subprocess.check_call(
                 ["git", "submodule", "update", "--recursive"],
                 stderr=devnull, stdout=devnull, cwd=clone_path)
@@ -115,10 +115,9 @@ def check_repo_if_needed(name, repo, ref, repos_dir, licenses_dir):
                     stdout=devnull, stderr=devnull)
             except (OSError, subprocess.CalledProcessError):
                 sys.stderr.write("Falling back to git clone.\n")
-                # Use a recursive clone to also clone submodules
                 subprocess.check_call(
                     ["git", "clone", "--recursive", repo_url, clone_path],
-                    stdout=devnull, stderr=devnull)
+                    stdout=devnull, stderr=devnull) # also clone submodules
 
     sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=clone_path).strip()
