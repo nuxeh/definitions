@@ -77,16 +77,14 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
         with open(chunk_meta_path, 'r') as f:
             chunk_meta_data = yaml.load(f)
 
-        try:
-            if not 'contents' in chunk_meta_data:
-                # Attempt to read YBD formatted metadata
-                chunk_contents = []
-                for prod in chunk_meta_data['products']:
-                    chunk_contents.append(prod['files'])
-            else:
-                # This is a Morph chunk
-                chunk_contents = reversed(chunk_meta_data['contents'])
-        except (KeyError):
+        if 'contents' in chunk_meta_data:
+            chunk_contents = reversed(chunk_meta_data['contents'])
+        elif 'products' in chunk_meta_data:
+            # Attempt to read YBD formatted metadata
+            chunk_contents = []
+            for prod in chunk_meta_data['products']:
+                chunk_contents.append(prod['files'])
+        else:
             raise writeexts.ExtensionError(
                 'Chunk %s does not contain valid contents metadata' % chunk)
 
