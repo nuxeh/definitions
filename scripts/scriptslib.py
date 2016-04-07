@@ -17,6 +17,7 @@
 
 import yaml
 import subprocess
+import os
 
 
 aliases = {
@@ -107,10 +108,11 @@ class BaserockMeta(object):
 
 def meta_load_from_dir(meta_dir_path):
     '''Return a dict representing the meta files contained in a directory'''
+
     files = [f for f in os.listdir(meta_dir_path)
              if os.isfile(join(meta_dir_path, f))]
 
     meta = BasrockMeta()
     for f in files:
-        if f.endswith['.meta']
+        if f.endswith('.meta'):
             meta.import_meta(open(os.join(meta_dir_path, f), 'r').read())
