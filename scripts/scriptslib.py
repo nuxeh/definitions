@@ -134,7 +134,7 @@ class BaserockMeta(object):
                 'repo':          repo,
                 'sha1':          source['ref'],
                 'repo-alias':    source['repo'],
-                'contents':      meta['files']
+                'contents':      meta['files'],
                 'cache-key':     meta['cache-key']
                 })
 
