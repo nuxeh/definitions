@@ -135,8 +135,8 @@ class BaserockMeta(object):
                 'repo':           repo,
                 'repo-alias':     source['repo'],
                 'sha1':           source['ref'],
-                'cache-key':      source['cache-key'],
-                'original_ref':   source['original_ref']
+                'original_ref':   source['ref'],
+                'cache-key':      source['cache-key']
                 })
 
     def _add_meta(self, meta_dict):
@@ -170,6 +170,7 @@ def meta_load_from_tarball(system_tarball_path):
         Metadata is read directly from the tarball, and doesn't require
         extraction to a temporary directory'''
 
+    meta = BaserockMeta()
     with tarfile.open(system_tarball_path) as tar:
         metas = [tarinfo for tarinfo in tar.getmembers()
                  if 'baserock/' in tarinfo.name
@@ -179,7 +180,6 @@ def meta_load_from_tarball(system_tarball_path):
             raise Exception('No Baserock metadata found '
                             'in %s' % system_tarball_path)
 
-        meta = BaserockMeta()
         for m in metas:
             meta.import_meta(tar.extractfile(m).read())
 
