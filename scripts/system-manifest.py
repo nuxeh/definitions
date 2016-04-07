@@ -58,10 +58,10 @@ def generate_manifest(args):
 
     global verbose
 
-    if args[0] and args[0] == '-v':
+    if len(args) and args[0] == '-v':
 	verbose = True
 
-    if len(args) < 1 + int(verbose):
+    if len(args) < (1 + int(verbose)):
         scriptslib.ScriptError(
             'usage:\n    system-manifest.py [-v] tarball_path')
 
