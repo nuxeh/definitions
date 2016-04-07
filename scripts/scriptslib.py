@@ -85,7 +85,7 @@ class BaserockMeta(object):
         source = yaml.load(meta_text)
 
         if 'repo' not in source:
-            return # Probably a stratum (no morph equivalent meta)
+            return # Probably a stratum (FIXME ignore for now)
 
         repo = parse_repo_alias(source['repo'])
         source_name = '-'.join(
@@ -108,7 +108,7 @@ class BaserockMeta(object):
 
         required_fields = ('repo', 'sha1', 'contents')
         for f in required_fields:
-            if meta_dict[f] is None:
+            if not f in meta_dict:
                 raise Exception('Metadata format not recognised, '
                                 'no value for \'%s\'' % f)
         self.metas[meta_dict['artifact-name']] = meta_dict
