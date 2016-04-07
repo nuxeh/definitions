@@ -18,7 +18,19 @@
 import yaml
 import subprocess
 import os
+import urllib2
+import urllib
+import urlparse
+import tarfile
+import sys
 
+class ScriptError(Exception):
+    def __init__(self, message):
+        status(message)
+        sys.exit(1)
+
+def status(message):
+    sys.stderr.write('%s\n' % message)
 
 aliases = {
   'baserock:': 'git://%(trove)s/baserock/',
@@ -36,6 +48,25 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
         return repo.replace(remote, aliases[remote])
     except KeyError as e:
         raise Exception("Unknown repo-alias \"%s\"" % repo)
+
+
+def cache_get_file(repo_url, ref, filename):
+    '''Obtain a single file from a repo on the Baserock cache server'''
+    return _cache_request('files?repo=%s&ref=%s&filename=%s' % tuple(
+                        [urllib.quote(s) for s in (repo_url, ref, filename)]))
+
+def cache_ls(repo_url, ref):
+    '''Get a list of files in a repo on the Baserock cache server'''
+    return _cache_request('trees?repo=%s&ref=%s' % tuple(
+                           [urllib.quote(s) for s in (repo_url, ref)]))
+
+def _cache_request(path):
+    '''Resolve a cache URL and return a string'''
+    server_url = 'http://git.baserock.org:8080/'
+    url = urlparse.urljoin(server_url, '/1.0/%s' % path)
+    fetch = urllib2.urlopen(url)
+    return fetch.read()
+
 
 def definitions_root():
     return subprocess.check_output(
