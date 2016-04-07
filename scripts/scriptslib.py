@@ -122,20 +122,21 @@ class BaserockMeta(object):
         source_name = '-'.join(
                       source['products'][0]['artifact'].split('-')[:-1])
 
-        for meta in source['products']:
+        if not 'cache-key' in source:
+            source['cache-key'] = '0000000'
 
-            if not 'cache-key' in meta:
-                meta['cache-key'] = '0000000'
+        for product in source['products']:
 
             self._add_meta({
-                'kind':          'chunk',
-                'source-name':   source_name,
-                'artifact-name': meta['artifact'],
-                'repo':          repo,
-                'sha1':          source['ref'],
-                'repo-alias':    source['repo'],
-                'contents':      meta['files'],
-                'cache-key':     meta['cache-key']
+                'kind':           'chunk',
+                'source-name':    source_name,
+                'artifact-name':  product['artifact'],
+                'contents':       product['files'],
+                'repo':           repo,
+                'repo-alias':     source['repo'],
+                'sha1':           source['ref'],
+                'cache-key':      source['cache-key']
+                'original_ref':   source['original_ref']
                 })
 
     def _add_meta(self, meta_dict):
