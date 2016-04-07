@@ -30,7 +30,7 @@ import sys
 import writeexts
 
 import imp
-sciptslib = imp.load_source('scriptslib', 'scripts/scriptslib')
+scriptslib = imp.load_source('scriptslib', 'scripts/scriptslib.py')
 
 class StripGPLv3ConfigureExtension(writeexts.Extension):
     gplv3_chunks = [
