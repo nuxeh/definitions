@@ -61,7 +61,7 @@ class BaserockMeta(object):
     def get_pkg(self, name):
         '''Yield an iterable of metadata matched by package, e.g. `bash`'''
         for key in self.metas:
-            if self.metas[key]['source_name'] == name:
+            if self.metas[key]['source-name'] == name:
 		yield self.metas[key]
 
     def import_meta(self, meta_text):
@@ -95,8 +95,8 @@ class BaserockMeta(object):
 
             self._add_meta({
                 'kind':          'chunk',
-                'source_name':   source_name,
-                'artifact_name': meta['artifact'],
+                'source-name':   source_name,
+                'artifact-name': meta['artifact'],
                 'repo':          repo,
                 'sha1':          source['ref'],
                 'repo-alias':    source['repo'],
@@ -111,7 +111,7 @@ class BaserockMeta(object):
             if meta_dict[f] is None:
                 raise Exception('Metadata format not recognised, '
                                 'no value for \'%s\'' % f)
-        self.metas[meta_dict['artifact_name']] = meta_dict
+        self.metas[meta_dict['artifact-name']] = meta_dict
 
 
 def meta_load_from_dir(meta_dir_path):
