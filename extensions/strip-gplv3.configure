@@ -64,8 +64,9 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
         metadata = scriptslib.meta_load_from_dir(meta_dir)
 
         for chunk in self.gplv3_chunks:
-            chunk_files = metadata.get(chunk)['contents']
-            self.remove_chunk(target_root, reversed(chunk_files), chunk[1])
+            for meta in metadata.get_pkg(chunk):
+                self.remove_chunk(
+                    target_root, reversed(meta['contents']), chunk[1])
 
     def remove_chunk(self, target_root, chunk, pattern):
         updated_contents = []

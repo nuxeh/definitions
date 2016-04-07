@@ -53,9 +53,6 @@ class BaserockMeta(object):
     def __init__(self):
         self.metas = {}
 
-    def get(self, name):
-        return self.metas[name]
-
     def get_each(self):
         '''Yield an iterable for the whole list of metas'''
         for key in self.metas:
