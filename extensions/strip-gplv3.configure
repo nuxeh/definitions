@@ -78,7 +78,6 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
                 updated_contents.append(content_entry)
 
     def remove_content_entry(self, target_root, content_entry):
-        print "remove_content_entry: %s" % content_entry
         entry_path = os.path.join(target_root, './' + content_entry)
         if not entry_path.startswith(target_root):
             raise writeexts.ExtensionError(
