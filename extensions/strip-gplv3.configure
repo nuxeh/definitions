@@ -62,38 +62,13 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
     def process_args(self, args):
         target_root = args[0]
         meta_dir = os.path.join(target_root, 'baserock')
+        metadata = scriptslib.meta_load_from_dir(meta_dir)
 
         for chunk in self.gplv3_chunks:
-            regex = os.path.join(meta_dir, "%s.*\.meta" % chunk[0])
-            artifacts = subprocess.check_output(['find', meta_dir,
-                                                 '-regex', regex])
-
-            # Can't rely on find regex for different versions of `find`
-            
-            append = ('locale', 'bins', 'devel', 'doc', 'libs', 'misc')
-            artifacts_filtered = [a if a.endswith()]
-
-            for artifact in artifacts.split():
-                print artifact
-                self.remove_chunk(target_root, artifact, chunk[1])
+            chunk_files = metadata.get(chunk)['contents']
+            self.remove_chunk(target_root, reversed(chunk_files), chunk[1])
 
     def remove_chunk(self, target_root, chunk, pattern):
-        chunk_meta_path = os.path.join(target_root, 'baserock', chunk)
-
-        with open(chunk_meta_path, 'r') as f:
-            chunk_meta_data = yaml.load(f)
-
-        if 'contents' in chunk_meta_data:
-            chunk_contents = reversed(chunk_meta_data['contents'])
-        elif 'products' in chunk_meta_data:
-            # Attempt to read YBD formatted metadata
-            chunk_contents = []
-            for prod in chunk_meta_data['products']:
-                chunk_contents += prod['files']
-        else:
-            raise writeexts.ExtensionError(
-                'Chunk %s does not contain valid contents metadata' % chunk)
-
         updated_contents = []
         for content_entry in chunk_contents:
             pat = re.compile(pattern)
