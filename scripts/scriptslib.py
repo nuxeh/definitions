@@ -110,9 +110,11 @@ def meta_load_from_dir(meta_dir_path):
     '''Return a dict representing the meta files contained in a directory'''
 
     files = [f for f in os.listdir(meta_dir_path)
-             if os.isfile(join(meta_dir_path, f))]
+             if os.path.isfile(os.path.join(meta_dir_path, f))]
 
-    meta = BasrockMeta()
+    meta = BaserockMeta()
     for f in files:
         if f.endswith('.meta'):
-            meta.import_meta(open(os.join(meta_dir_path, f), 'r').read())
+            meta.import_meta(open(os.path.join(meta_dir_path, f), 'r').read())
+
+    return meta.get_metas()
