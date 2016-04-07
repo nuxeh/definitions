@@ -61,9 +61,14 @@ class StripGPLv3ConfigureExtension(writeexts.Extension):
         meta_dir = os.path.join(target_root, 'baserock')
 
         for chunk in self.gplv3_chunks:
-            regex = os.path.join(meta_dir, "%s-[^-]\+\.meta" % chunk[0])
+            regex = os.path.join(meta_dir, "%s.*\.meta" % chunk[0])
             artifacts = subprocess.check_output(['find', meta_dir,
                                                  '-regex', regex])
+
+            # Can't rely on find regex for different versions of `find`
+            
+            append = ('locale', 'bins', 'devel', 'doc', 'libs', 'misc')
+            artifacts_filtered = [a if a.endswith()]
 
             for artifact in artifacts.split():
                 print artifact
