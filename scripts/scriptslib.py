@@ -51,10 +51,13 @@ class BaserockMeta(object):
        system image, for available metadata formats'''
 
     def __init__(self):
-        self.metas = []
+        self.metas = {}
 
     def get_metas(self):
         return self.metas
+
+    def get(name):
+        return metas[name]
 
     def import_meta(self, meta_text):
         importers = (self.import_meta_ybd,
@@ -103,7 +106,7 @@ class BaserockMeta(object):
             if meta_dict[f] is None:
                 raise Exception('Metadata format not recognised, '
                                 'no value for \'%s\'' % f)
-        self.metas.append(meta_dict)
+        self.metas[meta_dict[artifact_name]] = meta_dict
 
 
 def meta_load_from_dir(meta_dir_path):
@@ -117,4 +120,4 @@ def meta_load_from_dir(meta_dir_path):
         if f.endswith('.meta'):
             meta.import_meta(open(os.path.join(meta_dir_path, f), 'r').read())
 
-    return meta.get_metas()
+    return meta
