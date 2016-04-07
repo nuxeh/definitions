@@ -146,7 +146,7 @@ class BaserockMeta(object):
 
 
 def meta_load_from_dir(meta_dir_path):
-    '''Return a dict representing the meta files contained in a directory'''
+    '''Read Baserock metadata from a directory'''
 
     files = [f for f in os.listdir(meta_dir_path)
              if os.path.isfile(os.path.join(meta_dir_path, f))]
@@ -155,5 +155,27 @@ def meta_load_from_dir(meta_dir_path):
     for f in files:
         if f.endswith('.meta'):
             meta.import_meta(open(os.path.join(meta_dir_path, f), 'r').read())
+
+    return meta
+
+
+def meta_load_from_tarball(system_tarball_path):
+    ''' Read Baserock metadata from a system tarball
+
+        Metadata is read directly from the tarball, and doesn't require
+        extraction to a temporary directory'''
+
+    with tarfile.open(system_tarball_path) as tar:
+        metas = [tarinfo for tarinfo in tar.getmembers()
+                 if 'baserock/' in tarinfo.name
+                and tarinfo.name.endswith('.meta')]
+
+        if not metas:
+            raise Exception('No Baserock metadata found '
+                            'in %s' % system_tarball_path)
+
+        meta = BaserockMeta()
+        for m in metas:
+            meta.import_meta(tar.extractfile(m).read())
 
     return meta
