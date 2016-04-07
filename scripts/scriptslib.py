@@ -124,6 +124,9 @@ class BaserockMeta(object):
 
         for meta in source['products']:
 
+            if not 'cache-key' in meta:
+                meta['cache-key'] = '0000000'
+
             self._add_meta({
                 'kind':          'chunk',
                 'source-name':   source_name,
@@ -132,6 +135,7 @@ class BaserockMeta(object):
                 'sha1':          source['ref'],
                 'repo-alias':    source['repo'],
                 'contents':      meta['files']
+                'cache-key':     meta['cache-key']
                 })
 
     def _add_meta(self, meta_dict):
