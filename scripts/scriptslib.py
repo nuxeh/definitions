@@ -54,12 +54,18 @@ class BaserockMeta(object):
         self.metas = {}
 
     def get(self, name):
-        return metas[name]
+        return self.metas[name]
 
     def get_each(self):
-        '''Yield an iterable for the list of metas'''
+        '''Yield an iterable for the whole list of metas'''
         for key in self.metas:
             yield self.metas[key]
+
+    def get_pkg(self, name):
+        '''Yield an iterable of metadata matched by package, e.g. `bash`'''
+        for key in self.metas:
+            if self.metas[key]['source_name'] == name:
+		yield self.metas[key]
 
     def import_meta(self, meta_text):
         importers = (self.import_meta_ybd,
@@ -108,7 +114,7 @@ class BaserockMeta(object):
             if meta_dict[f] is None:
                 raise Exception('Metadata format not recognised, '
                                 'no value for \'%s\'' % f)
-        self.metas[meta_dict[artifact_name]] = meta_dict
+        self.metas[meta_dict['artifact_name']] = meta_dict
 
 
 def meta_load_from_dir(meta_dir_path):
