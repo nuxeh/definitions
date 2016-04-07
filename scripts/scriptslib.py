@@ -53,11 +53,13 @@ class BaserockMeta(object):
     def __init__(self):
         self.metas = {}
 
-    def get_metas(self):
-        return self.metas
-
-    def get(name):
+    def get(self, name):
         return metas[name]
+
+    def get_each(self):
+        '''Yield an iterable for the list of metas'''
+        for key in self.metas:
+            yield self.metas[key]
 
     def import_meta(self, meta_text):
         importers = (self.import_meta_ybd,
