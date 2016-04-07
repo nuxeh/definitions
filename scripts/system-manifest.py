@@ -21,7 +21,6 @@ import re
 import contextlib
 import tempfile
 import scriptslib
-from scriptslib import ScriptError
 
 
 verbose = False
@@ -53,17 +52,18 @@ def generate_manifest(args):
 
     Example:
 
-        ./scripts/system-manifest.py /src/cache/artifacts/foo-rootfs
+        ./scripts/system-manifest.py [-v] /src/cache/artifacts/foo-rootfs
 
     '''
 
     global verbose
 
-    if args[0] == '-v':
+    if args[0] and args[0] == '-v':
 	verbose = True
 
     if len(args) < 1 + int(verbose):
-        ScriptError('usage:\n    system-manifest.py [-v] tarball_path')
+        scriptslib.ScriptError(
+            'usage:\n    system-manifest.py [-v] tarball_path')
 
     artifact = args[-1]
 
@@ -258,8 +258,3 @@ class ManifestGenerator(object):
 
 if __name__ == "__main__":
     generate_manifest(sys.argv[1:])
-
-# TODO
-# - Test with ybd
-# - Clean output
-# - Clean debug messages
