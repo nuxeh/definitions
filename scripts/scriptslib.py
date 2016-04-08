@@ -48,7 +48,7 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
     try:
         return repo.replace(remote, aliases[remote])
     except KeyError as e:
-        raise ScriptError("Unknown repo-alias \"%s\"" % repo)
+        raise Exception("Unknown repo-alias \"%s\"" % repo)
 
 
 def cache_get_file(repo_url, ref, filename):
@@ -100,13 +100,13 @@ class BaserockMeta(object):
         importers = (self.import_meta_ybd,
                      self.import_meta_morph)
 
-        error = Exception() # Needed??
+        error = Exception()
         for i in importers:
             try:
                 i(meta_text)
                 return
             except (KeyError, ScriptError) as err:
-                error = err # scope?
+                error = err
                 pass
 
         # Shouldn't get here
