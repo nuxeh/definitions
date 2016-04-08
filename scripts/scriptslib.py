@@ -26,6 +26,7 @@ import sys
 
 class ScriptError(Exception):
     def __init__(self, message):
+        self.msg = message
         status(message)
         sys.exit(1)
 
@@ -47,7 +48,7 @@ def parse_repo_alias(repo, trove_host='git.baserock.org'):
     try:
         return repo.replace(remote, aliases[remote])
     except KeyError as e:
-        raise Exception("Unknown repo-alias \"%s\"" % repo)
+        raise ScriptError("Unknown repo-alias \"%s\"" % repo)
 
 
 def cache_get_file(repo_url, ref, filename):
@@ -89,8 +90,8 @@ class BaserockMeta(object):
         for key in self.metas:
             yield self.metas[key]
 
-    def get_pkg(self, name):
-        '''Yield an iterable of metadata matched by package, e.g. `bash`'''
+    def get_name(self, name):
+        '''Yield an iterable of metadata matched by name, e.g. `bash`'''
         for key in self.metas:
             if self.metas[key]['source-name'] == name:
 		yield self.metas[key]
@@ -99,30 +100,42 @@ class BaserockMeta(object):
         importers = (self.import_meta_ybd,
                      self.import_meta_morph)
 
+        error = Exception() # Needed??
         for i in importers:
             try:
                 i(meta_text)
                 return
-            except BaseException:
+            except (KeyError, ScriptError as err):
+                error = err # scope?
                 pass
 
         # Shouldn't get here
-        raise Exception('Metadata format not recognised.')
+        raise ScriptError('Metadata format not recognised.\n'
+                          'Error: %s' % error.msg)
 
     def import_meta_morph(self, meta_text):
         self._add_meta(yaml.load(meta_text))
 
+# Morph error handling
     def import_meta_ybd(self, meta_text):
         source = yaml.load(meta_text)
 
         if 'repo' not in source:
-            return # Probably a stratum (FIXME ignore for now)
+            # This is a stratum
+            source['kind'] = 'stratum'
+            source['repo'] = 'upstream:definitions'
+            source['sha1'] = '000000000000000000000000000000' # No ref info
+            source['contents'] = 
+                'original_ref':   source['ref'],
+                'cache-key':      source['cache-key']
+            return # Move down
 
         repo = parse_repo_alias(source['repo'])
         source_name = '-'.join(
                       source['products'][0]['artifact'].split('-')[:-1])
 
         if not 'cache-key' in source:
+            # Needed until YBD provides cache-key in metadata
             source['cache-key'] = '0000000'
 
         for product in source['products']:
@@ -145,8 +158,8 @@ class BaserockMeta(object):
         required_fields = ('repo', 'sha1', 'contents')
         for f in required_fields:
             if not f in meta_dict:
-                raise Exception('Metadata format not recognised, '
-                                'no value for \'%s\'' % f)
+                raise ScriptError('Metadata format not recognised, '
+                                  'no value for \'%s\'' % f)
         self.metas[meta_dict['artifact-name']] = meta_dict
 
 
@@ -177,8 +190,8 @@ def meta_load_from_tarball(system_tarball_path):
                 and tarinfo.name.endswith('.meta')]
 
         if not metas:
-            raise Exception('No Baserock metadata found '
-                            'in %s' % system_tarball_path)
+            raise ScriptError('No Baserock metadata found '
+                              'in %s' % system_tarball_path)
 
         for m in metas:
             meta.import_meta(tar.extractfile(m).read())
