@@ -120,31 +120,32 @@ class BaserockMeta(object):
     def import_meta_ybd(self, meta_text):
         source = yaml.load(meta_text)
 
+        null = '0' * 32
+
         if 'repo' not in source:
-            # This is a stratum
-            source['kind'] = 'stratum'
+            kind = 'stratum'
+            contents = 'components'
             source['repo'] = 'upstream:definitions'
-            source['sha1'] = '000000000000000000000000000000' # No ref info
-            source['contents'] = 
-                'original_ref':   source['ref'],
-                'cache-key':      source['cache-key']
-            return # Move down
+            source['ref'] = null # No ref info
+        else:
+            kind = 'chunk'
+            contents = 'files'
 
         repo = parse_repo_alias(source['repo'])
         source_name = '-'.join(
                       source['products'][0]['artifact'].split('-')[:-1])
 
+        # Needed until YBD provides cache-key in metadata
         if not 'cache-key' in source:
-            # Needed until YBD provides cache-key in metadata
-            source['cache-key'] = '0000000'
+            source['cache-key'] = null
 
         for product in source['products']:
 
             self._add_meta({
-                'kind':           'chunk',
+                'kind':           kind,
                 'source-name':    source_name,
                 'artifact-name':  product['artifact'],
-                'contents':       product['files'],
+                'contents':       product[contents],
                 'repo':           repo,
                 'repo-alias':     source['repo'],
                 'sha1':           source['ref'],
