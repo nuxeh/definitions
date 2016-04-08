@@ -154,11 +154,18 @@ class BaserockMeta(object):
     def _add_meta(self, meta_dict):
         '''Validate and add a meta'''
 
+        ignore = ('configuration',
+                  'system-artifact-name')
+        for i in ignore:
+            if i in meta_dict:
+                return
+
         required_fields = ('repo', 'sha1', 'contents')
         for f in required_fields:
             if not f in meta_dict:
                 raise Exception('Metadata format not recognised, '
                     'no value for \'%s\'. Data: \'%s\''% (f, str(meta_dict)))
+
         self.metas[meta_dict['artifact-name']] = meta_dict
 
 
