@@ -170,7 +170,7 @@ def meta_load_from_dir(meta_dir_path):
 
     meta = BaserockMeta()
     for f in files:
-        if f.endswith('.meta'):
+        if f.endswith('.meta') and f is not 'deployment.meta':
             meta.import_meta(open(os.path.join(meta_dir_path, f), 'r').read())
 
     return meta
@@ -193,6 +193,7 @@ def meta_load_from_tarball(system_tarball_path):
                             'in %s' % system_tarball_path)
 
         for m in metas:
-            meta.import_meta(tar.extractfile(m).read())
+            if f is not 'deployment.meta':
+                meta.import_meta(tar.extractfile(m).read())
 
     return meta
