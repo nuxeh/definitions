@@ -158,7 +158,7 @@ class BaserockMeta(object):
         for f in required_fields:
             if not f in meta_dict:
                 raise Exception('Metadata format not recognised, '
-                                'no value for \'%s\'' % f)
+                    'no value for \'%s\'. Data: \'%s\''% (f, str(meta_dict)))
         self.metas[meta_dict['artifact-name']] = meta_dict
 
 
