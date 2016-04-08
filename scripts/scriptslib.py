@@ -105,7 +105,7 @@ class BaserockMeta(object):
             try:
                 i(meta_text)
                 return
-            except (KeyError, ScriptError as err):
+            except (KeyError, ScriptError) as err:
                 error = err # scope?
                 pass
 
