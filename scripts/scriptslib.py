@@ -104,13 +104,13 @@ class BaserockMeta(object):
             try:
                 i(meta_text)
                 return
-            except (KeyError, Exception) as error:
+            except (KeyError, Exception) as err:
                 pass
 
         # Shouldn't get here
         sys.stderr.write('Metadata format not recognised.\n'
                          'Error:\n')
-        raise error
+        raise err
 
     def import_meta_morph(self, meta_text):
         self._add_meta(yaml.load(meta_text))
