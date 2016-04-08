@@ -100,23 +100,21 @@ class BaserockMeta(object):
         importers = (self.import_meta_ybd,
                      self.import_meta_morph)
 
-        error = Exception()
         for i in importers:
             try:
                 i(meta_text)
                 return
-            except (KeyError, Exception) as err:
-                error = err
+            except (KeyError, Exception) as error:
                 pass
 
         # Shouldn't get here
-        raise ScriptError('Metadata format not recognised.\n'
-                          'Error: %s' % error.msg)
+        sys.stderr.write('Metadata format not recognised.\n'
+                         'Error:\n')
+        raise error
 
     def import_meta_morph(self, meta_text):
         self._add_meta(yaml.load(meta_text))
 
-# Morph error handling
     def import_meta_ybd(self, meta_text):
         source = yaml.load(meta_text)
 
@@ -159,8 +157,8 @@ class BaserockMeta(object):
         required_fields = ('repo', 'sha1', 'contents')
         for f in required_fields:
             if not f in meta_dict:
-                raise ScriptError('Metadata format not recognised, '
-                                  'no value for \'%s\'' % f)
+                raise Exception('Metadata format not recognised, '
+                                'no value for \'%s\'' % f)
         self.metas[meta_dict['artifact-name']] = meta_dict
 
 
@@ -191,8 +189,8 @@ def meta_load_from_tarball(system_tarball_path):
                 and tarinfo.name.endswith('.meta')]
 
         if not metas:
-            raise ScriptError('No Baserock metadata found '
-                              'in %s' % system_tarball_path)
+            raise Exception('No Baserock metadata found '
+                            'in %s' % system_tarball_path)
 
         for m in metas:
             meta.import_meta(tar.extractfile(m).read())
