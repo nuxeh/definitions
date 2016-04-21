@@ -1,0 +1,22 @@
+name: deployment-system-armv8l64
+kind: system
+description: |
+  A system used inside a sandbox for repeatably
+  deploying systems on varying linux host systems.
+arch: armv8l64
+strata:
+- name: build-essential
+  morph: strata/build-essential.morph
+  artifacts:
+  - build-essential-minimal
+- name: foundation
+  morph: strata/foundation.morph
+- name: morph-utils
+  morph: strata/morph-utils.morph
+configuration-extensions:
+- extensions/set-hostname
+- extensions/simple-network
+- extensions/nfsboot
+- extensions/install-files
+- extensions/busybox-init
+- extensions/install-essential-files
