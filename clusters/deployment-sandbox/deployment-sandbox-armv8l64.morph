@@ -1,0 +1,10 @@
+name: deployment-sandbox-armv8l64
+kind: cluster
+description: Deploy a system used as a deployment sandbox for armv8l64
+systems:
+- morph: systems/deployment/deployment-sandbox-armv8l64.morph
+  deploy:
+    deployment-sandbox-armv8l64:
+      type: extensions/tar
+      location: ../deployment-sandbox-armv8l64.tar
+      HOSTNAME: deployment-sandbox-armv8l64
