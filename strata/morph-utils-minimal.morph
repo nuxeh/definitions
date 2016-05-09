@@ -1,0 +1,24 @@
+name: morph-utils-minimal
+kind: stratum
+build-depends:
+- morph: strata/core.morph
+- morph: strata/python2-core.morph
+chunks:
+- name: pyfilesystem
+  morph: strata/morph-utils/pyfilesystem.morph
+  repo: upstream:pyfilesystem
+  ref: 821f7db1ce3a3e1ac53fa514ddacbc2871eac0f6
+  unpetrify-ref: baserock/morph
+- name: pylru
+  repo: upstream:python-packages/pylru
+  ref: 221dd259f5c34562c835611d1cf62384b9019da4
+  unpetrify-ref: master
+  build-system: python-distutils
+- name: morph
+  repo: baserock:baserock/morph
+  ref: 74e8d1b9aeb47d957d526250784d2c0087e59bf9
+  unpetrify-ref: master
+  build-system: python-distutils
+  build-depends:
+  - pyfilesystem
+  - pylru
